@@ -1,6 +1,6 @@
 //go:build windows
 
-package main
+package adb
 
 import (
 	"os/exec"
@@ -13,9 +13,9 @@ var (
 	procSetConsoleCP       = kernel32.NewProc("SetConsoleCP")
 )
 
-// initConsole 把控制台输入输出代码页切到 UTF-8。
+// InitConsole 把控制台输入输出代码页切到 UTF-8。
 // 设备端输出可能包含中文，否则会显示为乱码。
-func initConsole() {
+func InitConsole() {
 	procSetConsoleOutputCP.Call(65001)
 	procSetConsoleCP.Call(65001)
 }

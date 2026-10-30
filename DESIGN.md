@@ -158,7 +158,7 @@ type Output struct {
 
 **超时**
 - 启动时 `adb start-server`：15s
-- 常规查询（`getprop`/`ps`/`df`/`ls`/`id`）：10s
+- 常规查询（`ps`/`df`/`ls`/`id`/`uptime`）：5s
 - `ping`：15s
 - `du` 类遍历：120s
 - 超时后**不重试**，直接标记 `[TIMEOUT]`，并停止依赖设备的后续检测
@@ -426,8 +426,16 @@ var MemWarnAvailablePercent *int = nil
 
 #### 4.9.1 检测日志文件
 
-**文件名**：`report_<设备序列号>_<yyyyMMdd_HHmmss>.txt`
-例：`report_8925c67aefcd0126_20261029_144512.txt`
+**文件名**：`report_<设备标识>_<yyyyMMdd_HHmmss>.txt`
+
+- **设备标识优先用业务设备号**（`/data/cabinet/deviceid`，形如 `HDZKA100337`），读不到时回退 adb 序列号
+- 例：`report_HDZKA100337_20261030_161957.txt`
+
+**生成时机**
+
+- 每执行一次检测（菜单 1 / 2 / 3）生成一个独立文件
+- **连接阶段失败时不生成报告**（没有任何检测数据，空文件只会干扰判断）
+- **边检测边写**：每完成一项立即落盘、不缓冲。主控卡死时程序可能被强杀，集中到最后写会导致前面的数据全部丢失，而现场往往只复现一次
 
 **保存位置**：优先 exe 所在目录；无写权限时回退到 `%USERPROFILE%\Documents\CabinetDiagnostic\`，并在终端提示实际路径。
 
@@ -435,7 +443,7 @@ var MemWarnAvailablePercent *int = nil
 
 **文件结构（三段）**
 
-1. **环境快照** — 生成时间、工具版本、adb 版本、主机名/用户、设备序列号、型号、Android 版本、内核、uptime、root 状态
+1. **环境快照** — 生成时间、工具版本、adb 版本、主机名/用户、设备序列号、业务设备号、uptime、root 状态
 2. **检测明细** — 按检测顺序，每一项都必须包含三要素：
    - 检测项名称与序号
    - 执行的原始命令
@@ -458,20 +466,16 @@ Tool version   : 0.1.0
 ADB version    : Android Debug Bridge version 1.0.41 (31.0.3-7562133)
 Host           : DESKTOP-XXXX / Administrator
 --------------------------------------------------------------
-Device serial  : 8925c67aefcd0126
-Model          : rk3568_r
-Android        : 11
-Kernel         : Linux localhost 4.19.193 #877 SMP PREEMPT ... aarch64
+Device serial  : f4b9a37a1aabf412
+Device ID      : HDZKA100337
 Uptime         : 12:58:28 up 55 min, 0 users, load average: 1.63, 1.06, 0.63
 Root           : NO (uid=2000 shell)
 ==============================================================
 
 [1] SYSTEM RESPONSE
 --------------------------------------------------------------
-$ adb shell id; getprop ro.product.model; getprop ro.build.version.release
+$ adb shell id
 uid=2000(shell) gid=2000(shell) groups=2000(shell),1004(input),...
-rk3568_r
-11
 
 Result: [OK] Device responsive
 
@@ -538,7 +542,7 @@ Report saved: D:\tools\report_8925c67aefcd0126_20261029_144512.txt
 - [ ] 每个检测项在报告中都具备「命令 + 原始输出 + 结论」三要素
 - [ ] 原始输出不裁剪、不截断
 - [ ] 被跳过的检测项有明确的 `Skipped: <原因>` 记录
-- [ ] 报告含设备序列号、型号、Android 版本、uptime、root 状态
+- [ ] 报告含设备序列号、业务设备号、uptime、root 状态
 - [ ] 记事本打开无乱码
 - [ ] 目录只读时回退到 Documents 并提示，流程不中断
 - [ ] 报告写入失败不影响终端显示，也不影响检测结论
@@ -569,31 +573,44 @@ type Reporter interface {
 
 ```text
 cabinet-diagnostic/
-├── main.go              // 菜单与主循环
-├── adb.go               // 命令执行、超时、连接状态
-├── config.go            // 阈值、文件清单、进程清单、目标
-├── diagnostic.go        // 流程编排与汇总
-├── system_check.go      // 系统响应 / 磁盘 / 内存
-├── file_check.go        // 目录与关键文件
-├── process_check.go     // 关键进程
-├── network_check.go     // 网络连通性
-├── report.go            // 输出与汇总
-├── extend.go            // 预留接口定义
-├── parsers/             // 纯解析函数（可单测）
+├── main.go                  // 入口、菜单与主循环
+├── go.mod
+├── build.bat                // go vet + go test + go build
+├── parsers/                 // 纯解析函数（可单测）
 │   ├── df.go
 │   ├── ps.go
 │   ├── ls.go
 │   ├── ping.go
-│   └── testdata/        // 真机输出 fixture
+│   └── testdata/            // 真机输出 fixture
 │       ├── df_h.txt
 │       ├── ps_ef.txt
 │       ├── ls_la.txt
 │       ├── ping_ok.txt
 │       ├── ping_loss.txt
 │       └── ping_fail.txt
-├── go.mod
+├── internal/
+│   ├── config/
+│   │   └── config.go        // 阈值、文件清单、进程清单、超时
+│   ├── adb/
+│   │   ├── adb.go           // 命令执行、超时、连接状态、设备信息
+│   │   ├── adb_test.go
+│   │   ├── exec_windows.go  // 控制台 UTF-8、隐藏 adb 黑窗
+│   │   ├── exec_other.go
+│   │   └── assets/          // 内嵌 adb.exe + 2 个依赖 DLL
+│   └── check/
+│       ├── check.go         // Result / Item / Level 契约
+│       ├── system_check.go  // 系统响应 / 磁盘 / 内存 / 大文件
+│       ├── file_check.go    // 待实现
+│       ├── process_check.go // 待实现
+│       ├── network_check.go // 待实现（由他人负责）
+│       ├── diagnostic.go    // 流程编排
+│       ├── report.go        // 报告文件 + 终端输出
+│       └── system_check_test.go
+├── reports/                 // 生成的检测日志，运行时自动创建
 └── README.md
 ```
+
+> 根目录只保留 `main.go`，其余按包归置。注意 Go 要求 `_test.go` 与被测代码**同包同目录**，无法单独放到 `test/` 目录，因此测试文件跟随各自所属的包。
 
 > 相对 prompt 第十二节，增加了 `parsers/` 和 `testdata/`。理由：解析是唯一需要精细单测的部分，独立成包更清晰。
 

@@ -1,4 +1,5 @@
-package main
+// Package adb 封装 adb 命令执行、连接状态判定与设备基础信息采集。
+package adb
 
 import (
 	"context"
@@ -12,6 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"cabinet-diagnostic/internal/config"
 )
 
 // adb.exe 及其在 Windows 上必须同目录存在的两个依赖 DLL。
@@ -20,7 +23,7 @@ import (
 //go:embed assets
 var assetsFS embed.FS
 
-var embeddedAdbFiles = []string{
+var embeddedFiles = []string{
 	"assets/adb.exe",
 	"assets/AdbWinApi.dll",
 	"assets/AdbWinUsbApi.dll",
@@ -55,6 +58,12 @@ func (o Output) Combined() string {
 type Runner struct {
 	adbPath string
 	serial  string
+
+	// 以下值只读取一次，避免重复执行命令。
+	deviceID       string
+	deviceIDLoaded bool
+	adbVersion     string
+	versionLoaded  bool
 }
 
 // NewRunner 解析 adb 路径并返回执行器。
@@ -72,9 +81,6 @@ func (r *Runner) AdbPath() string { return r.adbPath }
 
 // Serial 返回当前绑定的设备序列号。
 func (r *Runner) Serial() string { return r.serial }
-
-// SetSerial 绑定设备序列号，之后所有命令自动带 -s。
-func (r *Runner) SetSerial(s string) { r.serial = s }
 
 // Run 执行一条 adb 命令。
 func (r *Runner) Run(ctx context.Context, timeout time.Duration, args ...string) (Output, error) {
@@ -119,6 +125,43 @@ func (r *Runner) Shell(ctx context.Context, timeout time.Duration, script string
 	return r.Run(ctx, timeout, "shell", script)
 }
 
+// DeviceID 读取业务设备号（/data/cabinet/deviceid，内容形如 HDZKA100337）。
+//
+// 该文件没有结尾换行，必须 TrimSpace。结果会被缓存。
+// 读取失败时返回空字符串，由调用方显示为 [UNKNOWN]——不猜测、不编造。
+func (r *Runner) DeviceID(ctx context.Context) string {
+	if r.deviceIDLoaded {
+		return r.deviceID
+	}
+	r.deviceIDLoaded = true
+
+	out, err := r.Shell(ctx, config.TimeoutCommon, "cat "+config.DeviceIDFile)
+	if err != nil {
+		return ""
+	}
+	r.deviceID = strings.TrimSpace(out.Stdout)
+	return r.deviceID
+}
+
+// Version 返回 adb 版本描述，用于报告头部。结果会被缓存。
+func (r *Runner) Version(ctx context.Context) string {
+	if r.versionLoaded {
+		return r.adbVersion
+	}
+	r.versionLoaded = true
+
+	out, err := r.Run(ctx, config.TimeoutCommon, "version")
+	if err != nil {
+		return ""
+	}
+	line := strings.TrimSpace(out.Stdout)
+	if i := strings.IndexByte(line, '\n'); i >= 0 {
+		line = line[:i]
+	}
+	r.adbVersion = line
+	return r.adbVersion
+}
+
 // ---------------------------------------------------------------
 // 连接状态
 // ---------------------------------------------------------------
@@ -138,22 +181,24 @@ const (
 )
 
 // DeviceConn 是一次连接检测的结果。
+// 只描述"能不能连上"，设备标识与系统信息由 DeviceInfo 提供。
 type DeviceConn struct {
 	Status ConnStatus
-	Serial string
+	Serial string // adb 序列号
 	Detail string
 }
 
-// DetectConnection 依次检查 adb 可用性、设备数量与授权状态。
+// DetectConnection 依次检查 adb 可用性与授权状态。
+// 现场只会连接一台主控，不处理多设备场景。
 func (r *Runner) DetectConnection(ctx context.Context) DeviceConn {
-	if _, err := r.Run(ctx, TimeoutServerStart, "start-server"); err != nil {
+	if _, err := r.Run(ctx, config.TimeoutServerStart, "start-server"); err != nil {
 		if errors.Is(err, ErrTimeout) {
 			return DeviceConn{Status: ConnTimeout, Detail: "adb start-server timed out"}
 		}
 		return DeviceConn{Status: ConnStartFailed, Detail: err.Error()}
 	}
 
-	out, err := r.Run(ctx, TimeoutCommon, "devices")
+	out, err := r.Run(ctx, config.TimeoutCommon, "devices")
 	if err != nil {
 		if errors.Is(err, ErrTimeout) {
 			return DeviceConn{Status: ConnTimeout, Detail: "adb devices timed out"}
@@ -162,8 +207,6 @@ func (r *Runner) DetectConnection(ctx context.Context) DeviceConn {
 	}
 
 	devices := parseDevices(out.Stdout)
-
-	// 现场只会连接一台主控，不处理多设备场景。
 	if len(devices) == 0 {
 		return DeviceConn{Status: ConnNoDevice, Detail: "no device attached"}
 	}
@@ -187,7 +230,7 @@ type adbDevice struct {
 	state  string
 }
 
-// parseDevices 解析 adb devices 的输出。
+// parseDevices 解析 adb devices 的输出：
 //
 //	List of devices attached
 //	8925c67aefcd0126	device
@@ -216,44 +259,28 @@ func parseDevices(stdout string) []adbDevice {
 
 // DeviceInfo 是设备的基础信息快照。
 type DeviceInfo struct {
-	Serial         string
-	Model          string
-	AndroidVersion string
-	Kernel         string
-	Uptime         string
-	Root           bool
+	Serial   string // adb 序列号
+	DeviceID string // 业务设备号，来自 /data/cabinet/deviceid
+	Uptime   string
+	Root     bool
 }
 
-// DeviceInfo 读取设备基础信息。任一命令超时都会返回错误，
-// 调用方据此判断设备是否"无响应"。
+// DeviceInfo 读取设备基础信息，同时验证设备是否真正响应命令。
 func (r *Runner) DeviceInfo(ctx context.Context) (DeviceInfo, error) {
 	info := DeviceInfo{Serial: r.serial}
 
-	idOut, err := r.Shell(ctx, TimeoutCommon, "id")
+	idOut, err := r.Shell(ctx, config.TimeoutCommon, "id")
 	if err != nil {
 		return info, err
 	}
 	info.Root = strings.Contains(idOut.Stdout, "uid=0")
+	info.DeviceID = r.DeviceID(ctx)
 
-	info.Model = r.prop(ctx, "ro.product.model")
-	info.AndroidVersion = r.prop(ctx, "ro.build.version.release")
-
-	if o, err := r.Shell(ctx, TimeoutCommon, "uname -a"); err == nil {
-		info.Kernel = strings.TrimSpace(o.Stdout)
-	}
-	if o, err := r.Shell(ctx, TimeoutCommon, "uptime"); err == nil {
+	if o, err := r.Shell(ctx, config.TimeoutCommon, "uptime"); err == nil {
 		info.Uptime = strings.TrimSpace(o.Stdout)
 	}
 
 	return info, nil
-}
-
-func (r *Runner) prop(ctx context.Context, key string) string {
-	o, err := r.Shell(ctx, TimeoutCommon, "getprop "+key)
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(o.Stdout)
 }
 
 // ---------------------------------------------------------------
@@ -274,8 +301,8 @@ func resolveAdb() (string, error) {
 // 目录名带内容哈希，内容不变则复用，避免每次启动重复写盘。
 func extractEmbeddedAdb() (string, error) {
 	hash := sha256.New()
-	blobs := make(map[string][]byte, len(embeddedAdbFiles))
-	for _, name := range embeddedAdbFiles {
+	blobs := make(map[string][]byte, len(embeddedFiles))
+	for _, name := range embeddedFiles {
 		b, err := assetsFS.ReadFile(name)
 		if err != nil {
 			return "", fmt.Errorf("embedded %s unreadable: %w", name, err)
@@ -297,7 +324,7 @@ func extractEmbeddedAdb() (string, error) {
 		return "", fmt.Errorf("create temp dir failed: %w", err)
 	}
 
-	for _, name := range embeddedAdbFiles {
+	for _, name := range embeddedFiles {
 		dst := filepath.Join(dir, filepath.Base(name))
 		if err := os.WriteFile(dst, blobs[name], 0o755); err != nil {
 			return "", fmt.Errorf("write %s failed: %w", dst, err)

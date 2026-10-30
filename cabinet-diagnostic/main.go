@@ -1,3 +1,4 @@
+// 换电柜主控诊断工具：通过 adb 检测设备状态，并生成检测日志供研发分析。
 package main
 
 import (
@@ -7,15 +8,19 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"cabinet-diagnostic/internal/adb"
+	"cabinet-diagnostic/internal/check"
+	"cabinet-diagnostic/internal/config"
 )
 
 var stdin = bufio.NewReader(os.Stdin)
 
 func main() {
-	initConsole()
+	adb.InitConsole()
 	printBanner()
 
-	runner, err := NewRunner()
+	runner, err := adb.NewRunner()
 	if err != nil {
 		fmt.Printf("[ERROR] ADB not available: %v\n", err)
 		fmt.Println("        Set the ADB_PATH environment variable to a valid adb.exe.")
@@ -28,10 +33,11 @@ func main() {
 	ctx := context.Background()
 
 	// 连接检测：失败时允许重试（未授权场景需要在设备屏幕上点允许）
+	var conn adb.DeviceConn
 	for {
-		conn := runner.DetectConnection(ctx)
-		if conn.Status == ConnReady {
-			fmt.Printf("[OK]     Device connected: %s\n", conn.Serial)
+		conn = runner.DetectConnection(ctx)
+		if conn.Status == adb.ConnReady {
+			fmt.Println("[OK]     Device connected.")
 			break
 		}
 
@@ -49,10 +55,13 @@ func main() {
 	// 设备基础信息，同时验证设备是否真正响应命令
 	info, err := runner.DeviceInfo(ctx)
 	if err != nil {
-		if errors.Is(err, ErrTimeout) {
-			fmt.Println("[TIMEOUT] Device accepted the connection but does not respond to commands.")
+		// 信息读取失败时仍要把设备标识打出来，否则用户不知道连的是哪台
+		if errors.Is(err, adb.ErrTimeout) {
+			fmt.Printf("[TIMEOUT] Device %s accepted the connection but does not respond to commands.\n",
+				orUnknown(conn.Serial))
 		} else {
-			fmt.Printf("[ERROR]   Failed to read device info: %v\n", err)
+			fmt.Printf("[ERROR]   Device %s: failed to read device info: %v\n",
+				orUnknown(conn.Serial), err)
 		}
 		fmt.Println()
 		pressEnter()
@@ -60,11 +69,11 @@ func main() {
 	}
 	printDeviceInfo(info)
 
-	menuLoop()
+	menuLoop(ctx, runner, info)
 }
 
 // menuLoop 主菜单循环。非法输入不会导致程序退出。
-func menuLoop() {
+func menuLoop(ctx context.Context, runner *adb.Runner, info adb.DeviceInfo) {
 	for {
 		printMenu()
 
@@ -76,11 +85,11 @@ func menuLoop() {
 
 		switch line {
 		case "1":
-			notImplemented("Check System Status")
+			check.RunSystemChecks(ctx, runner, info)
 		case "2":
 			notImplemented("Check Network Connectivity")
 		case "3":
-			notImplemented("Run Full Diagnostics")
+			check.RunSystemChecks(ctx, runner, info)
 		case "0":
 			fmt.Println("Bye.")
 			return
@@ -93,8 +102,11 @@ func menuLoop() {
 
 func printBanner() {
 	fmt.Println("========================================")
-	fmt.Println("   " + AppName)
+	fmt.Println("   " + config.AppName)
 	fmt.Println("========================================")
+	fmt.Println()
+	fmt.Println("Device: RK3568 / Android 11")
+	fmt.Println("Version: " + config.AppVersion)
 	fmt.Println()
 }
 
@@ -109,41 +121,40 @@ func printMenu() {
 	fmt.Print("Please select an option: ")
 }
 
-func printDeviceInfo(i DeviceInfo) {
+func printDeviceInfo(i adb.DeviceInfo) {
 	root := "NO"
 	if i.Root {
 		root = "YES"
 	}
+
 	fmt.Println()
 	fmt.Println("--------------------------------------------------------------")
 	fmt.Printf("%-16s: %s\n", "Serial", orUnknown(i.Serial))
-	fmt.Printf("%-16s: %s\n", "Model", orUnknown(i.Model))
-	fmt.Printf("%-16s: %s\n", "Android version", orUnknown(i.AndroidVersion))
-	fmt.Printf("%-16s: %s\n", "Kernel", orUnknown(i.Kernel))
+	fmt.Printf("%-16s: %s\n", "Device ID", orUnknown(i.DeviceID))
 	fmt.Printf("%-16s: %s\n", "Uptime", orUnknown(i.Uptime))
 	fmt.Printf("%-16s: %s\n", "Root", root)
 	fmt.Println("--------------------------------------------------------------")
 }
 
-func printConnProblem(c DeviceConn) {
+func printConnProblem(c adb.DeviceConn) {
 	switch c.Status {
-	case ConnADBNotFound:
+	case adb.ConnADBNotFound:
 		fmt.Println("[ERROR] adb not found.")
 		fmt.Println("        Check ADB installation, or set ADB_PATH.")
-	case ConnStartFailed:
+	case adb.ConnStartFailed:
 		fmt.Printf("[ERROR] Failed to start adb server: %s\n", c.Detail)
 		fmt.Println("        Check whether another process is blocking port 5037.")
-	case ConnNoDevice:
+	case adb.ConnNoDevice:
 		fmt.Println("[ERROR] No device detected.")
 		fmt.Println("        Check the USB cable and the USB port.")
-	case ConnUnauthorized:
+	case adb.ConnUnauthorized:
 		fmt.Printf("[ERROR] Device %s is unauthorized.\n", orUnknown(c.Serial))
 		fmt.Println("        Please check the device screen and tap \"Allow\"")
 		fmt.Println("        on the USB debugging prompt, then press Enter to retry.")
-	case ConnOffline:
+	case adb.ConnOffline:
 		fmt.Printf("[ERROR] Device %s is offline.\n", orUnknown(c.Serial))
 		fmt.Println("        Try reconnecting the USB cable.")
-	case ConnTimeout:
+	case adb.ConnTimeout:
 		fmt.Printf("[TIMEOUT] %s\n", c.Detail)
 		fmt.Println("          The device may be hung or the USB connection is unstable.")
 	default:
@@ -151,7 +162,7 @@ func printConnProblem(c DeviceConn) {
 	}
 }
 
-// notImplemented 第一阶段只做骨架，检测功能在后续阶段接入。
+// notImplemented 暂无实现的功能项。
 func notImplemented(name string) {
 	fmt.Printf("[INFO] \"%s\" is not implemented yet.\n", name)
 	fmt.Println("       It will be added in the next phase.")

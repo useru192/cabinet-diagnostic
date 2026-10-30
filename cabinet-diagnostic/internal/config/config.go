@@ -1,4 +1,5 @@
-package main
+// Package config 集中存放阈值、清单与超时，调整参数只需改这里。
+package config
 
 import "time"
 
@@ -68,6 +69,9 @@ const (
 	// CabinetDir 关键文件所在的业务目录。
 	CabinetDir = "/data/cabinet"
 
+	// DeviceIDFile 业务设备号文件，内容形如 HDZKA100337。
+	DeviceIDFile = CabinetDir + "/deviceid"
+
 	// TopFilesLimit 大文件分析最多输出的文件数量。
 	TopFilesLimit = 40
 )
@@ -78,7 +82,7 @@ const (
 
 var (
 	TimeoutServerStart = 5 * time.Second  // adb start-server
-	TimeoutCommon      = 5 * time.Second  // getprop / ps / df / ls / id / uptime
+	TimeoutCommon      = 5 * time.Second  // ps / df / ls / id / uptime
 	TimeoutPing        = 15 * time.Second // ping
 	TimeoutScan        = 10 * time.Second // 目录遍历类命令
 )

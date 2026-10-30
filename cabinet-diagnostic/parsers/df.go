@@ -111,6 +111,8 @@ func parseHumanSize(s string) (int64, bool) {
 		mult, num = 1<<20, s[:len(s)-1]
 	case 'G', 'g':
 		mult, num = 1<<30, s[:len(s)-1]
+	case 'T', 't':
+		mult, num = 1<<40, s[:len(s)-1]
 	}
 
 	v, err := strconv.ParseFloat(num, 64)
