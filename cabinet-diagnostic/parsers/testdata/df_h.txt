@@ -1,0 +1,18 @@
+Filesystem            Size  Used Avail Use% Mounted on
+tmpfs                 979M  824K  978M   1% /dev
+tmpfs                 979M     0  979M   0% /mnt
+
+/dev/block/mmcblk0p11  11M  144K   11M   2% /metadata
+/dev/block/dm-0       936M  933M     0 100% /
+/dev/block/dm-5       674M  1.2M  673M   1% /mnt/scratch
+overlay               674M  1.2M  673M   1% /system
+overlay               674M  1.2M  673M   1% /vendor
+overlay               674M  1.2M  673M   1% /odm
+overlay               674M  1.2M  673M   1% /product
+overlay               674M  1.2M  673M   1% /system_ext
+tmpfs                 979M     0  979M   0% /apex
+tmpfs                 979M  264K  979M   1% /linkerconfig
+/dev/block/mmcblk0p10 356M  112K  344M   1% /cache
+/dev/block/dm-6        10G  349M   10G   4% /data
+tmpfs                 979M     0  979M   0% /data_mirror
+/dev/fuse              10G  349M   10G   4% /storage/emulated

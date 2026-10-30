@@ -1,0 +1,4 @@
+PING www.baidu.com (110.242.68.3) 56(84) bytes of data.
+
+--- www.baidu.com ping statistics ---
+4 packets transmitted, 0 received, 100% packet loss

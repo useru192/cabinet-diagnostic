@@ -1,0 +1,464 @@
+# 一、项目目标
+
+开发一款基于 **Go + ADB** 的 RK3568 Android 11 主控故障诊断工具，运行于 Windows，通过英文终端菜单实现设备自动检测。
+
+第一阶段只实现基础设备检测，不实现文件删除、日志回传、设备重启等功能，但需要预留后续扩展接口。
+
+开发前先分析当前项目，再输出设计方案，最后按模块逐步实现，不要一次性生成全部代码。
+
+# 二、技术要求
+
+- 开发语言：Go。
+- 运行环境：Windows。
+- 目标设备：RK3568 Android 11 主控板。
+- 设备通信方式：ADB。
+- 用户交互：英文终端菜单。
+- 磁盘告警阈值：80%。
+- 网络检测目标：百度，优先使用 `www.baidu.com`。
+- 代码模块化，方便后续维护和扩展。
+- 设备检测以只读操作为主，不得删除或修改设备文件。
+- ADB 命令必须设置超时时间，避免设备无响应导致程序卡死。
+
+# 三、开发前要求
+
+开始编码前：
+
+1. 检查当前项目目录、已有代码、Go 版本及项目结构。
+2. 如果已有项目，不得擅自覆盖或删除原有代码。
+3. 输出项目现状、技术方案、模块划分、文件结构及实施步骤。
+4. 明确每个模块的输入、输出、异常处理和验收标准。
+5. 将下方提供的文件清单、进程清单、磁盘阈值和网络检测目标直接纳入实现，不得擅自删减或修改。
+6. 完成方案分析后，先汇报设计结果，再按模块实现。
+
+# 四、终端菜单
+
+实现以下英文菜单：
+
+```text
+========================================
+   Battery Swap Cabinet Diagnostic Tool
+========================================
+
+Device: RK3568 / Android 11
+
+1. Check System Status
+2. Check Network Connectivity
+3. Run Full Diagnostics
+0. Exit
+
+Please select an option:
+```
+
+功能说明：
+
+- `1`：检测系统状态、磁盘、内存、关键文件和关键进程。
+- `2`：检测设备网络连通性。
+- `3`：执行全部检测并汇总结果。
+- `0`：退出程序。
+
+检测结束后允许返回主菜单。处理非法输入，避免程序异常退出。
+
+# 五、ADB 连接与系统响应检测
+
+程序启动后，首先检查：
+
+1. Windows 是否能够执行 ADB。
+2. 是否连接了主控设备。
+3. 设备是否处于 `device` 状态。
+4. 是否能够执行简单的设备命令并正常返回结果。
+5. 获取设备型号、Android 版本等基础信息。
+
+异常处理：
+
+- ADB 不存在：提示检查 ADB 安装和环境配置。
+- 设备未连接：提示检查 USB 连接。
+- 设备未授权：提示检查设备授权状态。
+- 命令超时：输出设备无响应信息，停止后续依赖设备的检测。
+
+注意：ADB 无响应不一定代表系统没有启动，必须区分设备未连接、未授权和设备无响应。
+
+# 六、磁盘空间检测
+
+## 6.1 检查磁盘使用率
+
+通过 ADB 在设备端执行：
+
+```bash
+df -h
+```
+
+磁盘告警阈值固定为 **80%**。
+
+判断规则：
+
+- 使用率 `< 80%`：正常。
+- 使用率 `>= 80%`：告警。
+
+输出每个可解析分区的总容量、已用容量、剩余容量和使用率。
+
+示例：
+
+```text
+========== Disk Check ==========
+[OK] /data usage: 65%
+[WARNING] / usage: 85%
+[WARNING] /data usage: 92%
+```
+
+要求：
+
+- 根据实际 `df -h` 输出解析分区信息。
+- 对使用率达到或超过 80% 的分区输出告警。
+- 无法解析的分区应标记为 `[UNKNOWN]`，不能默认正常。
+- 注意 Android 的动态分区、overlay 分区等情况，避免重复统计或错误归因。
+
+## 6.2 检查大文件
+
+当存在使用率达到或超过 80% 的分区时，进一步统计相关目录和大文件的占用情况。
+
+重点检查：
+
+```text
+/data/cabinet
+```
+
+要求：
+
+1. 统计 `/data/cabinet` 下各文件的大小。
+2. 尽可能列出占用空间较大的文件，按大小从大到小排序。
+3. 特别关注日志文件及异常增大的文件。
+4. 输出文件路径和大小，帮助研发人员定位磁盘空间被占满的原因。
+5. 对权限不足、文件消失和统计失败等情况单独提示。
+
+注意：`/data/cabinet` 只是重点检查目录。如果告警分区不包含该目录，还应根据实际挂载关系检查其他相关目录。
+
+**只检查，不删除任何文件。**
+
+# 七、内存使用检测
+
+通过以下命令获取内存信息：
+
+```bash
+free -m
+cat /proc/meminfo
+```
+
+要求：
+
+1. 获取总内存、可用内存及相关指标。
+2. 判断是否存在内存不足风险。
+3. 输出检测数据和判断依据。
+4. 数据获取失败时输出 `[UNKNOWN]`。
+
+内存判断不能仅依赖已用内存百分比，需要结合可用内存、缓存及系统实际内存压力。
+
+如果暂时无法确定适用于设备的内存告警阈值，应将阈值设计为可配置项，并明确标记待确认，不得随意编造固定标准。
+
+# 八、关键目录及文件检测
+
+检查以下目录：
+
+```text
+/data/cabinet
+```
+
+如果目录不存在，输出：
+
+```text
+[ERROR] Directory not found: /data/cabinet
+```
+
+如果目录存在，则将实际文件与以下清单逐项比对。
+
+## 8.1 必须存在的文件清单
+
+```go
+var RequiredFiles = []string{
+    "CabinetControlgo",
+    "cabinet.apk",
+    "cabinet.toml",
+    "cabinet.toml.bak",
+    "cabinettcpclient.pid",
+    "grpcurl",
+    "cabinetapp",
+    "cabinetapp.pid",
+    "cabinetlocalupgrade",
+    "cabinetlocalupgrade.pid",
+    "cabinetbluetooth.apk",
+    "cabinetcontrolgo",
+    "cabinetcontrolgo.pid",
+    "cabinetcontrolgo.toml",
+    "cabinetcontrolgo.toml.bak",
+    "cabinetmqtt.pid",
+    "cabinetmqtt.yaml",
+    "cabinettcpclient",
+    "restart.sh",
+    "restart_app.sh",
+    "restart_general_app.sh",
+    "restart_xiaoyaapp.sh",
+    "cabinetapp.yaml",
+    "cabinetlocalupgrade.yaml",
+    "deviceid",
+    "sqlite.db",
+    "startup.sh",
+    "init.sh",
+    "ota_upgrade_app.sh",
+    "ota_upgrade_main.sh",
+    "ota_upgrade_mcu.sh",
+    "cabinetmqtt",
+    "upgrade",
+}
+```
+
+## 8.2 检测规则
+
+1. 清单直接维护在 Go 程序中，方便后续修改。
+2. 不得自行删除或修改清单条目。
+3. 文件名按大小写精确匹配。
+4. 逐项检查文件或目录是否存在。
+5. 正确识别普通文件、目录及可执行文件，避免将 `upgrade` 等目录误判为缺失。
+6. 缺失时输出 `[MISSING]` 和完整路径。
+7. 单个文件缺失不能中断其他文件的检查。
+
+输出示例：
+
+```text
+========== File Check ==========
+[OK] /data/cabinet/cabinetcontrolgo
+[OK] /data/cabinet/cabinetcontrolgo.toml
+[MISSING] /data/cabinet/cabinetmqtt.yaml
+```
+
+第一阶段只检查存在性，不检查文件内容是否正确。
+
+# 九、关键进程检测
+
+通过 ADB 执行：
+
+```bash
+ps -ef
+```
+
+如果当前 Android 系统不支持该命令或输出格式不同，可以选择兼容命令，但必须保证检测结果可靠。
+
+## 9.1 必须检测的进程清单
+
+```go
+var RequiredProcesses = []string{
+    "sh ./restart.sh cabinetcontrolgo",
+    "sh ./restart.sh cabinettcpclient",
+    "sh ./restart.sh cabinetmqtt",
+    "sh ./restart.sh cabinetapp",
+    "sh ./restart.sh cabinetlocalupgrade",
+    "cabinetcontrolgo",
+    "cabinettcpclient",
+    "cabinetapp",
+    "cabinetmqtt",
+    "cabinetlocalupgrade",
+    "cabinetapp.wasion",
+}
+```
+
+## 9.2 检测规则
+
+1. 逐项检查进程是否存在。
+2. 存在时输出 `[RUNNING]`。
+3. 不存在时输出 `[NOT RUNNING]`。
+4. 无法可靠判断时输出 `[UNKNOWN]`。
+5. 不得因为守护脚本运行，就认定对应的业务进程正常运行。
+6. 守护脚本进程和业务进程必须分别检测。
+7. 避免把 `grep cabinet`、诊断工具自身或其他无关进程误判为目标进程。
+8. 优先解析实际进程名称及命令行参数。
+9. 对 `cabinetapp.wasion` 等进程，结合实际 `ps -ef` 输出确定可靠的匹配规则。
+
+输出示例：
+
+```text
+========== Process Check ==========
+[RUNNING]     cabinetcontrolgo
+[RUNNING]     sh ./restart.sh cabinetcontrolgo
+[NOT RUNNING] cabinetmqtt
+[UNKNOWN]     cabinetapp.wasion
+```
+
+# 十、网络连通性检测
+
+通过 ADB 在主控设备端执行 Ping 命令，检测目标：
+
+```text
+www.baidu.com
+```
+
+要求：
+
+1. 检查设备是否支持 `ping` 命令。
+2. 执行有限次数的 Ping，设置合理的命令超时时间。
+3. 判断域名能否解析。
+4. 判断是否收到目标返回的 ICMP 响应。
+5. 输出目标地址、解析情况、响应情况和最终检测状态。
+
+建议检测命令：
+
+```bash
+ping -c 4 -W 2 www.baidu.com
+```
+
+如果设备上的 `ping` 不支持上述参数，应根据实际命令帮助调整参数。
+
+输出示例：
+
+```text
+========== Network Check ==========
+Target: www.baidu.com
+
+[OK] DNS resolution successful
+[OK] Ping successful
+Packet loss: 0%
+```
+
+异常示例：
+
+```text
+========== Network Check ==========
+Target: www.baidu.com
+
+[ERROR] DNS resolution failed
+```
+
+或：
+
+```text
+[WARNING] Ping failed or target is unreachable
+```
+
+注意：
+
+- 必须在主控设备端执行 Ping，不能使用 Windows 电脑的 Ping 结果代替。
+- 区分域名解析失败、目标不可达、Ping 超时和命令不支持。
+- Ping 失败不一定代表 4G 或 Wi-Fi 模块损坏，也可能是路由配置异常或目标禁止 ICMP。
+- 第一阶段只检测到百度的网络连通性，不要求自动判断当前使用的是 4G 还是 Wi-Fi。
+
+# 十一、全面诊断流程
+
+选择 `Run Full Diagnostics` 后，按以下顺序执行：
+
+1. ADB 连接检查。
+2. 系统响应检查。
+3. 磁盘空间检查。
+4. 大文件占用分析。
+5. 内存检查。
+6. `/data/cabinet` 目录及关键文件检查。
+7. 关键进程检查。
+8. Ping 百度。
+9. 汇总全部检测结果。
+
+如果 ADB 无法正常访问设备，应停止后续设备端检测，避免产生大量无效错误。
+
+如果某个独立检测项目失败，但设备仍可正常访问，应继续执行其他检测项目。
+
+统一使用以下检测状态：
+
+- `[OK]`：正常。
+- `[WARNING]`：存在风险。
+- `[ERROR]`：明确异常。
+- `[MISSING]`：关键文件或目录缺失。
+- `[NOT RUNNING]`：关键进程未运行。
+- `[TIMEOUT]`：操作超时。
+- `[UNKNOWN]`：无法判断。
+
+最后输出检测总览，包括异常分区、缺失文件、未运行进程、网络检测结果及其他异常信息。
+
+# 十二、项目代码结构
+
+建议采用以下结构：
+
+```text
+cabinet-diagnostic/
+├── main.go
+├── adb.go
+├── config.go
+├── diagnostic.go
+├── system_check.go
+├── file_check.go
+├── process_check.go
+├── network_check.go
+├── report.go
+├── go.mod
+└── README.md
+```
+
+模块职责：
+
+- `main.go`：程序入口及英文菜单。
+- `adb.go`：ADB 命令执行、连接检测、超时及错误处理。
+- `config.go`：80% 磁盘告警阈值、文件清单、进程清单及 Ping 目标。
+- `diagnostic.go`：检测流程编排。
+- `system_check.go`：系统响应、磁盘和内存检测。
+- `file_check.go`：目录及关键文件检测。
+- `process_check.go`：关键进程检测。
+- `network_check.go`：百度连通性检测。
+- `report.go`：终端检测结果输出和汇总。
+- `README.md`：构建方法、使用说明和已知限制。
+
+可以根据现有项目实际情况调整文件结构，但必须保持职责清晰，避免将所有功能写入一个文件。
+
+# 十三、预留功能
+
+第一阶段不实现以下功能：
+
+- 手动输入路径并删除指定文件。
+- 自动回传设备检测日志。
+
+只预留清晰的接口或模块边界，不执行任何删除或上传操作。
+
+# 十四、测试要求
+
+至少覆盖以下场景：
+
+1. ADB 不存在。
+2. 设备未连接。
+3. 设备未授权。
+4. 设备无响应。
+5. 磁盘使用率低于 80%。
+6. 磁盘使用率达到或超过 80%。
+7. 大文件占用统计成功及失败。
+8. 内存信息获取失败。
+9. `/data/cabinet` 目录不存在。
+10. 关键文件缺失。
+11. 关键进程正常运行及未运行。
+12. 守护脚本存在但业务进程缺失。
+13. 百度域名解析成功及失败。
+14. Ping 成功、失败及超时。
+15. 菜单输入非法字符。
+
+将命令输出解析和检测逻辑分离，尽可能通过模拟命令输出进行单元测试。
+
+完成单元测试后，在真实 RK3568 Android 11 主控设备上进行联调。
+
+# 十五、开发约束与交付要求
+
+开发约束：
+
+- 先分析现有项目，再设计，再编码。
+- 不得覆盖或删除无关代码。
+- 不得修改已确认的文件清单和进程清单。
+- 不得伪造检测结果。
+- 不得把检测失败默认当成正常。
+- 不得擅自增加文件删除、服务重启和升级功能。
+- 每次修改后执行 `gofmt`、编译和适用的测试。
+- 发现测试失败时，先分析并修复。
+- 不得在未完成真实设备验证时宣称已经通过设备联调。
+
+最终交付：
+
+1. 完整 Go 源代码。
+2. 可运行的英文终端菜单。
+3. 基础设备诊断功能。
+4. 关键文件和进程检测功能。
+5. 磁盘使用率 80% 告警机制。
+6. 百度 Ping 检测功能。
+7. README 使用说明。
+8. 编译与测试结果。
+9. 已知限制和后续扩展计划。
+
+**现在开始：先检查当前项目目录和已有代码，输出项目现状、设计方案、文件结构及实施计划。完成汇报后暂停，等待确认，再开始分模块编码。**

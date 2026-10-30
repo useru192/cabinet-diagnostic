@@ -1,0 +1,17 @@
+UID             PID   PPID C STIME TTY          TIME CMD
+root              1      0 0 12:03:05 ?     00:00:02 init second_stage
+root              2      0 0 12:03:05 ?     00:00:00 [kthreadd]
+root           1773   1198 0 12:03:31 ?     00:00:01 sh ./restart.sh cabinetcontrolgo
+root           1774   1198 0 12:03:31 ?     00:00:01 sh ./restart.sh cabinettcpclient
+root           1775   1198 0 12:03:31 ?     00:00:01 sh ./restart.sh cabinetmqtt
+root           1776   1198 0 12:03:31 ?     00:00:01 sh ./restart.sh cabinetapp
+root           1777   1198 0 12:03:31 ?     00:00:01 sh ./restart.sh cabinetlocalupgrade
+root           1792   1773 2 12:03:31 ?     00:01:24 cabinetcontrolgo
+root           1794   1774 0 12:03:31 ?     00:00:03 cabinettcpclient
+root           1795   1776 0 12:03:31 ?     00:00:00 cabinetapp
+root           1796   1775 0 12:03:31 ?     00:00:01 cabinetmqtt
+root           1799   1777 0 12:03:31 ?     00:00:00 cabinetlocalupgrade
+u0_a125        2023    260 8 12:03:51 ?     00:04:57 cabinetapp.wasion
+u0_a125        2076   2023 1 12:03:52 ?     00:00:25 cabinetapp.wasion:jse 57 61 1 /data/user/0/cabinetapp.wasion/app_crash/crash_dump.log
+shell         21497    336 0 13:03:47 ?     00:00:00 sh -c ps -ef | grep -E 'restart.sh|cabinet'
+shell         21500  21497 1 13:03:47 ?     00:00:00 grep -E restart.sh|cabinet
