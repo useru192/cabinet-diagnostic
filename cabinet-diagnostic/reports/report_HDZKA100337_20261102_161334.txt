@@ -1,14 +1,14 @@
 ﻿==============================================================
  Cabinet Diagnostic Report
 ==============================================================
-Generated at   : 2026-10-30 16:41:30
+Generated at   : 2026-11-02 16:13:34
 Tool version   : 0.1.0
 ADB version    : Android Debug Bridge version 1.0.41
 Host           : PC-20251226SCDI / Administrator
 --------------------------------------------------------------
 Device serial  : f4b9a37a1aabf412
 Device ID      : HDZKA100337
-Uptime         : 13:19:21 up 12 min,  0 users,  load average: 0.41, 0.73, 0.71
+Uptime         : 19:12:38 up 47 min,  0 users,  load average: 167.67, 156.33, 125.84
 Root           : NO
 ==============================================================
 
@@ -36,69 +36,77 @@ overlay               674M  1.2M  673M   1% /system_ext
 tmpfs                 979M     0  979M   0% /apex
 tmpfs                 979M  264K  979M   1% /linkerconfig
 /dev/block/mmcblk0p10 356M  112K  344M   1% /cache
-/dev/block/dm-6        10G  682M  9.3G   7% /data
+/dev/block/dm-6        10G  692M  9.3G   7% /data
 tmpfs                 979M     0  979M   0% /data_mirror
-/dev/fuse              10G  682M  9.3G   7% /storage/emulated
+/dev/fuse              10G  692M  9.3G   7% /storage/emulated
 Result:
   [OK]          /mnt/scratch     1%    674M total /   1.2M used /   673M avail
   [OK]          /cache           1%    356M total /   112K used /   344M avail
-  [OK]          /data            7%     10G total /   682M used /   9.3G avail
-  [INFO]        Duplicate mount skipped: /storage/emulated (same disk as a parent mount)
-  [INFO]        Read-only system mounts not counted: 7
-  [INFO]        Virtual memory mounts skipped: 5
+  [OK]          /data            7%     10G total /   692M used /   9.3G avail
 
 [3] MEMORY CHECK
 --------------------------------------------------------------
-$ adb shell free -m; head -30 /proc/meminfo
-		total        used        free      shared     buffers
-Mem:             1958        1871          86          33           4
--/+ buffers/cache:           1867          90
-Swap:             979           0         979
-
---- /proc/meminfo ---
+$ adb shell cat /proc/meminfo
 MemTotal:        2005076 kB
-MemFree:           88568 kB
-MemAvailable:     896576 kB
-Buffers:            4232 kB
-Cached:           928340 kB
+MemFree:          147672 kB
+MemAvailable:     951308 kB
+Buffers:            3844 kB
+Cached:           918524 kB
 SwapCached:            0 kB
-Active:           722460 kB
-Inactive:         676692 kB
-Active(anon):     564368 kB
-Inactive(anon):    33332 kB
-Active(file):     158092 kB
-Inactive(file):   643360 kB
-Unevictable:       99788 kB
-Mlocked:           99788 kB
+Active:           685864 kB
+Inactive:         678052 kB
+Active(anon):     540780 kB
+Inactive(anon):    32832 kB
+Active(file):     145084 kB
+Inactive(file):   645220 kB
+Unevictable:       99656 kB
+Mlocked:           99656 kB
 SwapTotal:       1002532 kB
 SwapFree:        1002532 kB
-Dirty:                52 kB
-Writeback:             0 kB
-AnonPages:        566428 kB
-Mapped:           555816 kB
-Shmem:             33832 kB
-KReclaimable:     102976 kB
-Slab:             152136 kB
-SReclaimable:      77932 kB
-SUnreclaim:        74204 kB
-KernelStack:       19680 kB
-PageTables:        43512 kB
+Dirty:               112 kB
+Writeback:            76 kB
+AnonPages:        541144 kB
+Mapped:           551560 kB
+Shmem:             33316 kB
+KReclaimable:     109752 kB
+Slab:             156016 kB
+SReclaimable:      78520 kB
+SUnreclaim:        77496 kB
+KernelStack:       23376 kB
+PageTables:        44212 kB
 NFS_Unstable:          0 kB
 Bounce:                0 kB
 WritebackTmp:          0 kB
+CommitLimit:     2005068 kB
+Committed_AS:   42722176 kB
+VmallocTotal:   263061440 kB
+VmallocUsed:       36596 kB
+VmallocChunk:          0 kB
+Percpu:             2592 kB
+CmaTotal:           8192 kB
+CmaAllocated:       2112 kB
+CmaReleased:        6080 kB
+CmaFree:               0 kB
 Result:
-  [INFO]        Available memory 875 MB (44% of total, from /proc/meminfo)
+  [INFO]        Available memory 929 MB (47% of total, used 53%)
 
 [4] LARGE FILE ANALYSIS
 --------------------------------------------------------------
-Skipped: no writable partition reached 80%
+Skipped: no writable partition reached 85%
 
-[5] SUMMARY
+[5] FILE CHECK
+--------------------------------------------------------------
+$ adb shell ls -la /data/cabinet
+Result:
+  [TIMEOUT]     Device did not respond to 'ls -la /data/cabinet' within 5s
+
+[6] SUMMARY
 --------------------------------------------------------------
 SYSTEM RESPONSE       : [OK]
 DISK CHECK            : [OK]
 MEMORY CHECK          : [INFO]
 LARGE FILE ANALYSIS   : [INFO]
+FILE CHECK            : [TIMEOUT]
 
 ==============================================================
  End of report

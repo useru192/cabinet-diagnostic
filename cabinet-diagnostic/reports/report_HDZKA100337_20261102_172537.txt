@@ -1,0 +1,615 @@
+﻿==============================================================
+ Cabinet Diagnostic Report
+==============================================================
+Generated at   : 2026-11-02 17:25:37
+Tool version   : 0.1.0
+ADB version    : Android Debug Bridge version 1.0.41
+Host           : PC-20251226SCDI / Administrator
+--------------------------------------------------------------
+Device serial  : f4b9a37a1aabf412
+Device ID      : HDZKA100337
+Uptime         : 13:09:31 up 2 min,  0 users,  load average: 3.60, 2.06, 0.82
+Root           : NO
+==============================================================
+
+[1] SYSTEM RESPONSE
+--------------------------------------------------------------
+$ adb shell id
+uid=2000(shell) gid=2000(shell) groups=2000(shell),1004(input),1007(log),1011(adb),1015(sdcard_rw),1028(sdcard_r),1078(ext_data_rw),1079(ext_obb_rw),3001(net_bt_admin),3002(net_bt),3003(inet),3006(net_bw_stats),3009(readproc),3011(uhid) context=u:r:shell:s0
+Result:
+  [OK]          Device responsive (non-root, uid=2000(shell))
+
+[2] DISK CHECK
+--------------------------------------------------------------
+$ adb shell df -h
+Filesystem            Size  Used Avail Use% Mounted on
+tmpfs                 979M  824K  978M   1% /dev
+tmpfs                 979M     0  979M   0% /mnt
+/dev/block/mmcblk0p11  11M  144K   11M   2% /metadata
+/dev/block/dm-0       936M  933M     0 100% /
+/dev/block/dm-5       674M  1.2M  673M   1% /mnt/scratch
+overlay               674M  1.2M  673M   1% /system
+overlay               674M  1.2M  673M   1% /vendor
+overlay               674M  1.2M  673M   1% /odm
+overlay               674M  1.2M  673M   1% /product
+overlay               674M  1.2M  673M   1% /system_ext
+tmpfs                 979M     0  979M   0% /apex
+tmpfs                 979M  264K  979M   1% /linkerconfig
+/dev/block/mmcblk0p10 356M  112K  344M   1% /cache
+/dev/block/dm-6        10G  694M  9.3G   7% /data
+tmpfs                 979M     0  979M   0% /data_mirror
+/dev/fuse              10G  694M  9.3G   7% /storage/emulated
+Result:
+  [OK]          /mnt/scratch     1%    674M total /   1.2M used /   673M avail
+  [OK]          /cache           1%    356M total /   112K used /   344M avail
+  [WARNING]     /data            7%     10G total /   694M used /   9.3G avail
+
+[3] MEMORY CHECK
+--------------------------------------------------------------
+$ adb shell cat /proc/meminfo
+MemTotal:        2005076 kB
+MemFree:          117688 kB
+MemAvailable:     910396 kB
+Buffers:            4228 kB
+Cached:           930840 kB
+SwapCached:            0 kB
+Active:           714264 kB
+Inactive:         677464 kB
+Active(anon):     554808 kB
+Inactive(anon):    33048 kB
+Active(file):     159456 kB
+Inactive(file):   644416 kB
+Unevictable:       99700 kB
+Mlocked:           99700 kB
+SwapTotal:       1002532 kB
+SwapFree:        1002532 kB
+Dirty:                60 kB
+Writeback:             0 kB
+AnonPages:        556428 kB
+Mapped:           553544 kB
+Shmem:             33540 kB
+KReclaimable:      85256 kB
+Slab:             152728 kB
+SReclaimable:      79112 kB
+SUnreclaim:        73616 kB
+KernelStack:       19680 kB
+PageTables:        43412 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:     2005068 kB
+Committed_AS:   43872788 kB
+VmallocTotal:   263061440 kB
+VmallocUsed:       35172 kB
+VmallocChunk:          0 kB
+Percpu:             2592 kB
+CmaTotal:           8192 kB
+CmaAllocated:       2112 kB
+CmaReleased:        6080 kB
+CmaFree:               0 kB
+Result:
+  [OK]          Memory usage 54% (Total 1958 MB, Used 1069 MB)
+
+[4] LARGE FILE ANALYSIS
+--------------------------------------------------------------
+$ adb shell ls -lR /data/cabinet
+/data/cabinet:
+total 109166
+-rwxrwxrwx 1 root root    20550 2026-09-01 16:33 __UNI__870397E__20260901155816.apk
+-rwxrwxrwx 1 root root  1152216 2026-04-02 11:16 busybox
+-rwxrwxrwx 1 root root 28408355 2026-06-30 09:27 cabinet.apk
+-rwxrwxrwx 1 root root       26 2026-10-16 14:32 cabinet.toml
+-rwxrwxrwx 1 root root       26 2026-10-16 14:32 cabinet.toml.bak
+-rwxrwxrwx 1 root root       26 2026-10-16 14:32 cabinet.toml.bak1
+-rwxrwxrwx 1 root root  5212560 2026-05-06 11:05 cabinetapp
+drwxrwxrwx 2 root root     3452 2024-04-19 13:07 cabinetapp-log
+-rw------- 1 root root        4 2024-04-19 13:07 cabinetapp.pid
+-rwxrwxrwx 1 root root       32 2026-04-02 11:16 cabinetapp.yaml
+-rwxrwxrwx 1 root root  6522446 2026-04-02 11:16 cabinetbluetooth.apk
+-rwxrwxrwx 1 root root  5197704 2026-05-06 11:05 cabinetcontrolgo
+drwxrwxrwx 2 root root     3452 2024-04-19 13:07 cabinetcontrolgo-log
+-rw------- 1 root root        4 2024-04-19 13:07 cabinetcontrolgo.pid
+-rwxrwxrwx 1 root root     1575 2026-10-24 13:09 cabinetcontrolgo.toml
+-rwxrwxrwx 1 root root     1581 2026-10-16 14:32 cabinetcontrolgo.toml.bak
+-rwxrwxrwx 1 root root     1581 2026-10-16 14:32 cabinetcontrolgo.toml.bak1
+-rwxrwxrwx 1 root root  1782156 2026-05-06 16:16 cabinetlocalupgrade
+drwxrwxrwx 2 root root     3452 2024-04-19 13:07 cabinetlocalupgrade-log
+-rw------- 1 root root        4 2024-04-19 13:07 cabinetlocalupgrade.pid
+-rwxrwxrwx 1 root root      345 2026-05-06 16:16 cabinetlocalupgrade.yaml
+-rwxrwxrwx 1 root root  3313520 2026-05-06 11:05 cabinetmqtt
+drwxrwxrwx 2 root root     3452 2024-04-19 13:07 cabinetmqtt-log
+-rw------- 1 root root        4 2024-04-19 13:07 cabinetmqtt.pid
+-rwxrwxrwx 1 root root      164 2026-05-06 11:06 cabinetmqtt.yaml
+-rwxrwxrwx 1 root root  3309536 2026-06-04 14:53 cabinetplatformclient
+-rwxrwxrwx 1 root root  2726136 2026-05-06 11:05 cabinettcpclient
+drwxrwxrwx 2 root root     3452 2024-04-19 13:07 cabinettcpclient-log
+-rw------- 1 root root        4 2024-04-19 13:07 cabinettcpclient.pid
+-rwxrwxrwx 1 root root       11 2026-10-16 14:35 deviceid
+-rwxrwxrwx 1 root root 27135260 2026-04-02 11:16 grpcurl
+-rwxrwxrwx 1 root root      286 2026-04-02 11:16 init.sh
+-rwxrwxrwx 1 root root  4600024 2026-05-25 09:09 libc++_shared.so
+-rwxrwxrwx 1 root root   123748 2026-05-25 09:09 libcamera.so
+-rwxrwxrwx 1 root root 21574420 2026-05-25 09:09 libnetsdk.so
+-rwxrwxrwx 1 root root     2732 2026-05-06 16:15 ota_download_file.sh
+-rwxrwxrwx 1 root root     3034 2026-05-06 16:16 ota_upgrade_app.sh
+-rwxrwxrwx 1 root root     3640 2026-09-17 10:22 ota_upgrade_main.sh
+-rwxrwxrwx 1 root root     2729 2026-09-17 10:22 ota_upgrade_mcu.sh
+-rwxrwxrwx 1 root root      657 2026-04-02 11:16 restart.sh
+-rwxrwxrwx 1 root root     2693 2026-05-06 16:15 restart_app.sh
+-rwxrwxrwx 1 root root      241 2026-05-06 16:15 restart_general_app.sh
+-rwxrwxrwx 1 root root        0 2024-04-19 13:07 sql.log
+-rwxrwxrwx 1 root root   118784 2024-04-19 13:07 sqlite.db
+-rwxrwxrwx 1 root root      474 2026-05-06 11:06 startup.sh
+-rwxrwxrwx 1 root root        0 2026-10-16 14:42 touch.log
+-rwxrwxrwx 1 root root        0 2024-04-19 12:02 toucherr.log
+drwxrwxrwx 2 root root     3452 2024-04-19 12:02 towerpicture
+drwxrwxrwx 2 root root     3452 2024-04-19 12:02 towervedio
+drwxrwxrwx 2 root root     3452 2024-04-19 12:04 upgrade
+drwxrwxrwx 2 root root     3452 2024-04-19 12:04 voice
+-rwxrwxrwx 1 root root   409040 2026-08-31 16:22 voice.tar.bz2
+
+/data/cabinet/cabinetapp-log:
+total 3968
+-rwxrwxrwx 1 root root  237994 2024-04-19 13:07 cabinetapp-20240419.log
+-rwxrwxrwx 1 root root 3530914 2026-10-16 14:52 cabinetapp-20261016.log
+-rwxrwxrwx 1 root root  269000 2026-10-24 13:14 cabinetapp-20261024.log
+-rwxrwxrwx 1 root root   15431 2026-10-29 17:29 cabinetapp-20261029.log
+lrwxrwxrwx 1 root root      23 2024-04-19 13:07 cabinetapp.log -> cabinetapp-20240419.log
+
+/data/cabinet/cabinetcontrolgo-log:
+total 3452
+-rwxrwxrwx 1 root root 2455647 2024-04-19 13:09 cabinetcontrolgo-20240419.log
+-rwxrwxrwx 1 root root  528341 2026-10-16 14:53 cabinetcontrolgo-20261016.log
+-rwxrwxrwx 1 root root  237778 2026-10-24 13:16 cabinetcontrolgo-20261024.log
+-rwxrwxrwx 1 root root  306990 2026-10-29 17:30 cabinetcontrolgo-20261029.log
+lrwxrwxrwx 1 root root      29 2024-04-19 13:07 cabinetcontrolgo.log -> cabinetcontrolgo-20240419.log
+
+/data/cabinet/cabinetlocalupgrade-log:
+total 20
+-rwxrwxrwx 1 root root  7191 2024-04-19 13:07 cabinetlocalupgrade-20240419.log
+-rwxrwxrwx 1 root root 11421 2026-10-24 13:00 cabinetlocalupgrade-20261024.log
+-rwxrwxrwx 1 root root   423 2026-10-29 17:19 cabinetlocalupgrade-20261029.log
+lrwxrwxrwx 1 root root    32 2024-04-19 13:07 cabinetlocalupgrade.log -> cabinetlocalupgrade-20240419.log
+
+/data/cabinet/cabinetmqtt-log:
+total 306
+-rwxrwxrwx 1 root root  14926 2024-04-19 13:07 cabinetmqtt-20240419.log
+-rwxrwxrwx 1 root root 166456 2026-10-16 14:52 cabinetmqtt-20261016.log
+-rwxrwxrwx 1 root root 123585 2026-10-24 13:16 cabinetmqtt-20261024.log
+-rwxrwxrwx 1 root root   1886 2026-10-29 17:19 cabinetmqtt-20261029.log
+lrwxrwxrwx 1 root root     24 2024-04-19 13:07 cabinetmqtt.log -> cabinetmqtt-20240419.log
+
+/data/cabinet/cabinettcpclient-log:
+total 5564
+-rwxrwxrwx 1 root root 3339569 2024-04-19 13:09 cabinettcpclient-20240419.log
+-rwxrwxrwx 1 root root  595454 2026-10-16 14:53 cabinettcpclient-20261016.log
+-rwxrwxrwx 1 root root 1375049 2026-10-24 13:16 cabinettcpclient-20261024.log
+-rwxrwxrwx 1 root root  379165 2026-10-29 17:30 cabinettcpclient-20261029.log
+lrwxrwxrwx 1 root root      29 2024-04-19 13:07 cabinettcpclient.log -> cabinettcpclient-20240419.log
+
+/data/cabinet/towerpicture:
+total 0
+
+/data/cabinet/towervedio:
+total 0
+
+/data/cabinet/upgrade:
+total 168
+-rwxrwxrwx 1 root root 170092 2026-06-30 09:59 AllProject_N32G452RCL7_Capsule_V3.0-260624_0005.hex
+
+/data/cabinet/voice:
+total 0
+Result:
+  [INFO]            27.1 M  /data/cabinet/cabinet.apk
+  [INFO]            25.9 M  /data/cabinet/grpcurl
+  [INFO]            20.6 M  /data/cabinet/libnetsdk.so
+  [INFO]             6.2 M  /data/cabinet/cabinetbluetooth.apk
+  [INFO]             5.0 M  /data/cabinet/cabinetapp
+  [INFO]             5.0 M  /data/cabinet/cabinetcontrolgo
+  [INFO]             4.4 M  /data/cabinet/libc++_shared.so
+  [INFO]             3.4 M  /data/cabinet/cabinetapp-log/cabinetapp-20261016.log
+  [INFO]             3.2 M  /data/cabinet/cabinettcpclient-log/cabinettcpclient-20240419.log
+  [INFO]             3.2 M  /data/cabinet/cabinetmqtt
+  [INFO]             3.2 M  /data/cabinet/cabinetplatformclient
+  [INFO]             2.6 M  /data/cabinet/cabinettcpclient
+  [INFO]             2.3 M  /data/cabinet/cabinetcontrolgo-log/cabinetcontrolgo-20240419.log
+  [INFO]             1.7 M  /data/cabinet/cabinetlocalupgrade
+  [INFO]             1.3 M  /data/cabinet/cabinettcpclient-log/cabinettcpclient-20261024.log
+  [INFO]             1.1 M  /data/cabinet/busybox
+  [INFO]           581.5 K  /data/cabinet/cabinettcpclient-log/cabinettcpclient-20261016.log
+  [INFO]           516.0 K  /data/cabinet/cabinetcontrolgo-log/cabinetcontrolgo-20261016.log
+  [INFO]           399.5 K  /data/cabinet/voice.tar.bz2
+  [INFO]           370.3 K  /data/cabinet/cabinettcpclient-log/cabinettcpclient-20261029.log
+
+[5] FILE CHECK
+--------------------------------------------------------------
+$ adb shell ls -la /data/cabinet
+total 109261
+drwxrwxrwx 11 root   root       3452 2024-04-19 13:07 .
+drwxrwx--x 48 system system   118784 2024-04-19 13:07 ..
+-rwxrwxrwx  1 root   root      20550 2026-09-01 16:33 __UNI__870397E__20260901155816.apk
+-rwxrwxrwx  1 root   root    1152216 2026-04-02 11:16 busybox
+-rwxrwxrwx  1 root   root   28408355 2026-06-30 09:27 cabinet.apk
+-rwxrwxrwx  1 root   root         26 2026-10-16 14:32 cabinet.toml
+-rwxrwxrwx  1 root   root         26 2026-10-16 14:32 cabinet.toml.bak
+-rwxrwxrwx  1 root   root         26 2026-10-16 14:32 cabinet.toml.bak1
+-rwxrwxrwx  1 root   root    5212560 2026-05-06 11:05 cabinetapp
+drwxrwxrwx  2 root   root       3452 2024-04-19 13:07 cabinetapp-log
+-rw-------  1 root   root          4 2024-04-19 13:07 cabinetapp.pid
+-rwxrwxrwx  1 root   root         32 2026-04-02 11:16 cabinetapp.yaml
+-rwxrwxrwx  1 root   root    6522446 2026-04-02 11:16 cabinetbluetooth.apk
+-rwxrwxrwx  1 root   root    5197704 2026-05-06 11:05 cabinetcontrolgo
+drwxrwxrwx  2 root   root       3452 2024-04-19 13:07 cabinetcontrolgo-log
+-rw-------  1 root   root          4 2024-04-19 13:07 cabinetcontrolgo.pid
+-rwxrwxrwx  1 root   root       1575 2026-10-24 13:09 cabinetcontrolgo.toml
+-rwxrwxrwx  1 root   root       1581 2026-10-16 14:32 cabinetcontrolgo.toml.bak
+-rwxrwxrwx  1 root   root       1581 2026-10-16 14:32 cabinetcontrolgo.toml.bak1
+-rwxrwxrwx  1 root   root    1782156 2026-05-06 16:16 cabinetlocalupgrade
+drwxrwxrwx  2 root   root       3452 2024-04-19 13:07 cabinetlocalupgrade-log
+-rw-------  1 root   root          4 2024-04-19 13:07 cabinetlocalupgrade.pid
+-rwxrwxrwx  1 root   root        345 2026-05-06 16:16 cabinetlocalupgrade.yaml
+-rwxrwxrwx  1 root   root    3313520 2026-05-06 11:05 cabinetmqtt
+drwxrwxrwx  2 root   root       3452 2024-04-19 13:07 cabinetmqtt-log
+-rw-------  1 root   root          4 2024-04-19 13:07 cabinetmqtt.pid
+-rwxrwxrwx  1 root   root        164 2026-05-06 11:06 cabinetmqtt.yaml
+-rwxrwxrwx  1 root   root    3309536 2026-06-04 14:53 cabinetplatformclient
+-rwxrwxrwx  1 root   root    2726136 2026-05-06 11:05 cabinettcpclient
+drwxrwxrwx  2 root   root       3452 2024-04-19 13:07 cabinettcpclient-log
+-rw-------  1 root   root          4 2024-04-19 13:07 cabinettcpclient.pid
+-rwxrwxrwx  1 root   root         11 2026-10-16 14:35 deviceid
+-rwxrwxrwx  1 root   root   27135260 2026-04-02 11:16 grpcurl
+-rwxrwxrwx  1 root   root        286 2026-04-02 11:16 init.sh
+-rwxrwxrwx  1 root   root    4600024 2026-05-25 09:09 libc++_shared.so
+-rwxrwxrwx  1 root   root     123748 2026-05-25 09:09 libcamera.so
+-rwxrwxrwx  1 root   root   21574420 2026-05-25 09:09 libnetsdk.so
+-rwxrwxrwx  1 root   root       2732 2026-05-06 16:15 ota_download_file.sh
+-rwxrwxrwx  1 root   root       3034 2026-05-06 16:16 ota_upgrade_app.sh
+-rwxrwxrwx  1 root   root       3640 2026-09-17 10:22 ota_upgrade_main.sh
+-rwxrwxrwx  1 root   root       2729 2026-09-17 10:22 ota_upgrade_mcu.sh
+-rwxrwxrwx  1 root   root        657 2026-04-02 11:16 restart.sh
+-rwxrwxrwx  1 root   root       2693 2026-05-06 16:15 restart_app.sh
+-rwxrwxrwx  1 root   root        241 2026-05-06 16:15 restart_general_app.sh
+-rwxrwxrwx  1 root   root          0 2024-04-19 13:07 sql.log
+-rwxrwxrwx  1 root   root     118784 2024-04-19 13:07 sqlite.db
+-rwxrwxrwx  1 root   root        474 2026-05-06 11:06 startup.sh
+-rwxrwxrwx  1 root   root          0 2026-10-16 14:42 touch.log
+-rwxrwxrwx  1 root   root          0 2024-04-19 12:02 toucherr.log
+drwxrwxrwx  2 root   root       3452 2024-04-19 12:02 towerpicture
+drwxrwxrwx  2 root   root       3452 2024-04-19 12:02 towervedio
+drwxrwxrwx  2 root   root       3452 2024-04-19 12:04 upgrade
+drwxrwxrwx  2 root   root       3452 2024-04-19 12:04 voice
+-rwxrwxrwx  1 root   root     409040 2026-08-31 16:22 voice.tar.bz2
+Result:
+  [OK]          /data/cabinet/cabinet.apk                  (file)
+  [OK]          /data/cabinet/cabinet.toml                 (file)
+  [OK]          /data/cabinet/cabinet.toml.bak             (file)
+  [OK]          /data/cabinet/cabinettcpclient.pid         (file)
+  [OK]          /data/cabinet/grpcurl                      (file)
+  [OK]          /data/cabinet/cabinetapp                   (file)
+  [OK]          /data/cabinet/cabinetapp.pid               (file)
+  [OK]          /data/cabinet/cabinetlocalupgrade          (file)
+  [OK]          /data/cabinet/cabinetlocalupgrade.pid      (file)
+  [OK]          /data/cabinet/cabinetbluetooth.apk         (file)
+  [OK]          /data/cabinet/cabinetcontrolgo             (file)
+  [OK]          /data/cabinet/cabinetcontrolgo.pid         (file)
+  [OK]          /data/cabinet/cabinetcontrolgo.toml        (file)
+  [OK]          /data/cabinet/cabinetcontrolgo.toml.bak    (file)
+  [OK]          /data/cabinet/cabinetmqtt.pid              (file)
+  [OK]          /data/cabinet/cabinetmqtt.yaml             (file)
+  [OK]          /data/cabinet/cabinettcpclient             (file)
+  [OK]          /data/cabinet/restart.sh                   (file)
+  [OK]          /data/cabinet/restart_app.sh               (file)
+  [OK]          /data/cabinet/restart_general_app.sh       (file)
+  [OK]          /data/cabinet/cabinetapp.yaml              (file)
+  [OK]          /data/cabinet/cabinetlocalupgrade.yaml     (file)
+  [OK]          /data/cabinet/deviceid                     (file)
+  [OK]          /data/cabinet/sqlite.db                    (file)
+  [OK]          /data/cabinet/startup.sh                   (file)
+  [OK]          /data/cabinet/init.sh                      (file)
+  [OK]          /data/cabinet/ota_upgrade_app.sh           (file)
+  [OK]          /data/cabinet/ota_upgrade_main.sh          (file)
+  [OK]          /data/cabinet/ota_upgrade_mcu.sh           (file)
+  [OK]          /data/cabinet/cabinetmqtt                  (file)
+  [OK]          /data/cabinet/upgrade                      (directory)
+  [INFO]        31 of 31 required items present
+
+[6] PROCESS CHECK
+--------------------------------------------------------------
+$ adb shell ps -ef
+UID             PID   PPID C STIME TTY          TIME CMD
+root              1      0 1 13:06:50 ?     00:00:02 init second_stage
+root              2      0 0 13:06:50 ?     00:00:00 [kthreadd]
+root              3      2 0 13:06:50 ?     00:00:00 [rcu_gp]
+root              4      2 0 13:06:50 ?     00:00:00 [rcu_par_gp]
+root              5      2 0 13:06:50 ?     00:00:00 [kworker/0:0-cgroup_pidlist_destroy]
+root              6      2 0 13:06:50 ?     00:00:00 [kworker/0:0H-kblockd]
+root              7      2 0 13:06:50 ?     00:00:00 [kworker/u8:0-adb]
+root              8      2 0 13:06:50 ?     00:00:00 [mm_percpu_wq]
+root              9      2 1 13:06:50 ?     00:00:01 [ksoftirqd/0]
+root             10      2 0 13:06:50 ?     00:00:00 [rcu_preempt]
+root             11      2 0 13:06:50 ?     00:00:00 [rcu_sched]
+root             12      2 0 13:06:50 ?     00:00:00 [rcu_bh]
+root             13      2 0 13:06:50 ?     00:00:00 [migration/0]
+root             14      2 1 13:06:50 ?     00:00:01 [kworker/0:1-sock_diag_events]
+root             15      2 0 13:06:50 ?     00:00:00 [cpuhp/0]
+root             16      2 0 13:06:50 ?     00:00:00 [cpuhp/1]
+root             17      2 0 13:06:50 ?     00:00:00 [migration/1]
+root             18      2 0 13:06:50 ?     00:00:00 [ksoftirqd/1]
+root             19      2 0 13:06:50 ?     00:00:00 [kworker/1:0-cgroup_pidlist_destroy]
+root             20      2 0 13:06:50 ?     00:00:00 [kworker/1:0H-kblockd]
+root             21      2 0 13:06:50 ?     00:00:00 [cpuhp/2]
+root             22      2 0 13:06:50 ?     00:00:00 [migration/2]
+root             23      2 0 13:06:50 ?     00:00:00 [ksoftirqd/2]
+root             24      2 0 13:06:50 ?     00:00:00 [kworker/2:0-cgroup_pidlist_destroy]
+root             25      2 0 13:06:50 ?     00:00:00 [kworker/2:0H-kblockd]
+root             26      2 0 13:06:50 ?     00:00:00 [cpuhp/3]
+root             27      2 0 13:06:50 ?     00:00:00 [migration/3]
+root             28      2 0 13:06:50 ?     00:00:00 [ksoftirqd/3]
+root             29      2 0 13:06:50 ?     00:00:00 [kworker/3:0-events]
+root             30      2 0 13:06:50 ?     00:00:00 [kworker/3:0H-dhd_eventd]
+root             31      2 0 13:06:50 ?     00:00:00 [kdevtmpfs]
+root             32      2 0 13:06:50 ?     00:00:00 [kworker/u8:1-flush-179:0]
+root             33      2 0 13:06:50 ?     00:00:00 [netns]
+root             34      2 0 13:06:50 ?     00:00:00 [rcu_tasks_kthre]
+root             35      2 0 13:06:50 ?     00:00:00 [kauditd]
+root             36      2 0 13:06:50 ?     00:00:00 [kworker/1:1-events_freezable]
+root             37      2 0 13:06:50 ?     00:00:00 [kworker/3:1-events_power_efficient]
+root             38      2 0 13:06:50 ?     00:00:00 [khungtaskd]
+root             39      2 0 13:06:50 ?     00:00:00 [oom_reaper]
+root             40      2 0 13:06:50 ?     00:00:00 [writeback]
+root             41      2 0 13:06:50 ?     00:00:00 [kcompactd0]
+root             42      2 0 13:06:50 ?     00:00:00 [crypto]
+root             43      2 0 13:06:50 ?     00:00:00 [kblockd]
+root             44      2 0 13:06:50 ?     00:00:00 [kworker/u9:0-kbase_pm_poweroff_wait]
+root             45      2 0 13:06:50 ?     00:00:00 [blk_crypto_wq]
+root             46      2 0 13:06:49 ?     00:00:00 [kconsole]
+root             47      2 0 13:06:49 ?     00:00:00 [devfreq_wq]
+root             48      2 0 13:06:49 ?     00:00:00 [watchdogd]
+root             49      2 0 13:06:49 ?     00:00:00 [cfinteractive]
+root             50      2 0 13:06:49 ?     00:00:00 [kworker/2:1-cgroup_pidlist_destroy]
+root             51      2 0 13:06:49 ?     00:00:00 [cfg80211]
+root             52      2 0 13:06:49 ?     00:00:00 [kswapd0]
+root             53      2 0 13:06:49 ?     00:00:00 [irq/59-rockchip]
+root             54      2 0 13:06:49 ?     00:00:00 [irq/60-rockchip]
+root             56      2 0 13:06:49 ?     00:00:00 [iommu_wq]
+root             57      2 0 13:06:49 ?     00:00:00 [vdpu]
+root             58      2 0 13:06:49 ?     00:00:00 [irq/20-fdea0400]
+root             59      2 0 13:06:49 ?     00:00:00 [vepu]
+root             60      2 0 13:06:49 ?     00:00:00 [irq/25-fdee0000]
+root             61      2 0 13:06:49 ?     00:00:00 [iep]
+root             62      2 0 13:06:49 ?     00:00:00 [irq/27-fdef0000]
+root             63      2 0 13:06:49 ?     00:00:00 [jpegd]
+root             64      2 0 13:06:49 ?     00:00:00 [irq/23-fded0000]
+root             65      2 0 13:06:49 ?     00:00:00 [rkvdec]
+root             66      2 0 13:06:49 ?     00:00:00 [hwrng]
+root             67      2 0 13:06:49 ?     00:00:00 [hpd_queue]
+root             68      2 0 13:06:49 ?     00:00:00 [irq/37-fe0a0000]
+root             69      2 0 13:06:49 ?     00:00:00 [cec-dw_hdmi]
+root             70      2 0 13:06:49 ?     00:00:00 [irq/37-dw-hdmi-]
+root             71      2 0 13:06:49 ?     00:00:00 [nvme-wq]
+root             72      2 0 13:06:49 ?     00:00:00 [nvme-reset-wq]
+root             73      2 0 13:06:49 ?     00:00:00 [nvme-delete-wq]
+root             74      2 0 13:06:49 ?     00:00:00 [stmmac_wq]
+root             75      2 0 13:06:49 ?     00:00:00 [uas]
+root             76      2 0 13:06:49 ?     00:00:00 [goodix_wq]
+root             77      2 0 13:06:49 ?     00:00:00 [gtp_esd_check]
+root             78      2 0 13:06:49 ?     00:00:00 [kworker/3:2-events_freezable]
+root             79      2 0 13:06:49 ?     00:00:00 [irq/70-rk817]
+root             80      2 0 13:06:49 ?     00:00:00 [irq/57-rockchip]
+root             81      2 0 13:06:49 ?     00:00:00 [dm_bufio_cache]
+root             82      2 0 13:06:49 ?     00:00:00 [kworker/0:2-events]
+root             83      2 0 13:06:49 ?     00:00:00 [irq/42-mmc0]
+root             84      2 0 13:06:49 ?     00:00:00 [ion_system_heap]
+root             85      2 0 13:06:49 ?     00:00:00 [ipv6_addrconf]
+root             86      2 0 13:06:49 ?     00:00:00 [krfcommd]
+root             88      2 0 13:06:49 ?     00:00:00 [irq/22-rga]
+root             89      2 0 13:06:49 ?     00:00:00 [mmc_complete]
+root             90      2 0 13:06:49 ?     00:00:00 [kworker/0:3]
+root             91      2 5 13:06:49 ?     00:00:07 [kworker/0:1H-mmc_complete]
+root             92      2 0 13:06:49 ?     00:00:00 [rkvenc]
+root             93      2 0 13:06:49 ?     00:00:00 [iommu_wq]
+root             94      2 0 13:06:49 ?     00:00:00 [irq/28-fdf40000]
+root             95      2 0 13:06:49 ?     00:00:00 [gpu_power_off_w]
+root             96      2 0 13:06:49 ?     00:00:00 [kbase_job_fault]
+root             97      2 0 13:06:49 ?     00:00:00 [kworker/u9:1-blk_crypto_wq]
+root             98      2 0 13:06:49 ?     00:00:00 [kworker/u8:2-flush-179:0]
+root            100      2 0 13:06:49 ?     00:00:00 [kworker/1:1H]
+root            101      2 1 13:06:49 ?     00:00:02 [kworker/1:2H-kblockd]
+root            102      2 0 13:06:49 ?     00:00:00 [kworker/2:1H]
+root            103      2 0 13:06:49 ?     00:00:00 [jbd2/mmcblk0p11]
+root            104      2 0 13:06:49 ?     00:00:00 [ext4-rsv-conver]
+root            105      2 0 13:06:49 ?     00:00:00 [kdmflush]
+root            106      2 0 13:06:49 ?     00:00:00 [kdmflush]
+root            107      2 0 13:06:49 ?     00:00:00 [kdmflush]
+root            108      2 0 13:06:49 ?     00:00:00 [kdmflush]
+root            109      2 0 13:06:49 ?     00:00:00 [kdmflush]
+root            110      2 0 13:06:49 ?     00:00:00 [kdmflush]
+root            111      2 0 13:06:49 ?     00:00:00 [kworker/3:1H-kblockd]
+root            112      2 0 13:06:49 ?     00:00:00 [ext4-rsv-conver]
+root            113      2 0 13:06:49 ?     00:00:00 [ext4-rsv-conver]
+root            114      2 0 13:06:49 ?     00:00:00 [ext4-rsv-conver]
+root            115      2 0 13:06:49 ?     00:00:00 [ext4-rsv-conver]
+root            116      2 0 13:06:49 ?     00:00:00 [kworker/0:2H-mmc_complete]
+root            117      2 0 13:06:49 ?     00:00:00 [ext4-rsv-conver]
+root            118      2 2 13:06:50 ?     00:00:02 [kworker/2:2H-kblockd]
+root            122      2 0 13:06:50 ?     00:00:00 [f2fs_flush-253:]
+root            123      2 0 13:06:50 ?     00:00:00 [f2fs_discard-25]
+root            124      2 0 13:06:50 ?     00:00:00 [f2fs_gc-253:5]
+root            125      2 1 13:06:50 ?     00:00:01 [kworker/3:2H-dhd_eventd]
+root            127      1 0 13:06:50 ?     00:00:00 init subcontext u:r:vendor_init:s0 15
+root            129      1 1 13:06:50 ?     00:00:01 ueventd
+root            137      2 0 13:06:51 ?     00:00:00 [kworker/1:2-events]
+root            142      2 0 13:06:51 ?     00:00:00 [kworker/2:2-sock_diag_events]
+logd            145      1 1 13:06:51 ?     00:00:01 logd
+lmkd            146      1 0 13:06:51 ?     00:00:00 lmkd
+system          147      1 0 13:06:51 ?     00:00:00 servicemanager
+system          148      1 0 13:06:51 ?     00:00:00 hwservicemanager
+system          149      1 0 13:06:51 ?     00:00:00 vndservicemanager /dev/vndbinder
+shell           150      1 0 13:06:51 ttyFIQ0 00:00:00 sh
+root            151      2 0 13:06:51 ?     00:00:00 [psimon]
+root            152      1 1 13:06:51 ?     00:00:01 rknn_server
+root            154      1 0 13:06:51 ?     00:00:00 vold --blkid_context=u:r:blkid:s0 --blkid_untrusted_context=u:r:blkid_untrusted:s0 --fsck_context=u:r:fsck:s0 --fsck_untrusted_context=u:r:fsck_untrusted:s0
+root            174      2 0 13:06:51 ?     00:00:00 [jbd2/mmcblk0p10]
+root            175      2 0 13:06:51 ?     00:00:00 [ext4-rsv-conver]
+root            177      1 0 13:06:51 ?     00:00:00 tee-supplicant
+system          178      1 0 13:06:51 ?     00:00:00 android.system.suspend@1.0-service
+system          179      1 0 13:06:51 ?     00:00:00 android.hardware.keymaster@4.0-service.optee
+system          180      1 3 13:06:51 ?     00:00:04 surfaceflinger
+root            191      2 0 13:06:52 ?     00:00:00 [kdmflush]
+root            197      2 0 13:06:52 ?     00:00:00 [kworker/u9:2-blk_crypto_wq]
+root            198      2 0 13:06:52 ?     00:00:00 [f2fs_flush-253:]
+root            199      2 0 13:06:52 ?     00:00:00 [f2fs_discard-25]
+root            200      2 0 13:06:52 ?     00:00:00 [kworker/u9:3-kbase_pm_poweroff_wait]
+root            201      2 0 13:06:52 ?     00:00:00 [kworker/u9:4-blk_crypto_wq]
+root            202      2 0 13:06:52 ?     00:00:00 [f2fs_gc-253:6]
+root            206      2 0 13:06:52 ?     00:00:00 [kworker/0:3H]
+root            210      2 0 13:06:52 ?     00:00:00 [kbase_event]
+system          222      1 0 13:06:52 ?     00:00:00 android.hardware.graphics.allocator@4.0-service
+system          231      1 0 13:06:52 ?     00:00:00 android.hardware.graphics.composer@2.1-service
+root            237      2 0 13:06:52 ?     00:00:00 [kworker/u8:3-adb]
+tombstoned      254      1 0 13:06:52 ?     00:00:00 tombstoned
+statsd          258      1 0 13:06:53 ?     00:00:00 statsd
+root            259      1 0 13:06:53 ?     00:00:00 netd
+root            260      1 2 13:06:53 ?     00:00:03 zygote64
+root            261      1 2 13:06:53 ?     00:00:03 zygote
+system          265      1 0 13:06:53 ?     00:00:00 android.hidl.allocator@1.0-service
+audioserver     266      1 0 13:06:53 ?     00:00:00 android.hardware.audio.service
+bluetooth       267      1 0 13:06:53 ?     00:00:00 android.hardware.bluetooth@1.0-service
+cameraserver    268      1 0 13:06:53 ?     00:00:00 android.hardware.camera.provider@2.4-external-service
+cameraserver    269      1 0 13:06:53 ?     00:00:00 android.hardware.camera.provider@2.4-service
+media           270      1 0 13:06:53 ?     00:00:00 android.hardware.cas@1.2-service
+root            271    259 0 13:06:53 ?     00:00:00 iptables-restore --noflush -w -v
+root            272    259 0 13:06:53 ?     00:00:00 ip6tables-restore --noflush -w -v
+media           274      1 0 13:06:53 ?     00:00:00 android.hardware.drm@1.3-service.clearkey
+media           275      1 0 13:06:53 ?     00:00:00 android.hardware.drm@1.3-service.widevine
+system          276      1 0 13:06:53 ?     00:00:00 android.hardware.gatekeeper@1.0-service.optee
+gps             277      1 0 13:06:53 ?     00:00:00 android.hardware.gnss@1.0-service
+system          278      1 0 13:06:53 ?     00:00:00 android.hardware.health@2.1-service
+system          279      1 0 13:06:53 ?     00:00:00 android.hardware.radio.config@1.0-service
+system          280      1 0 13:06:53 ?     00:00:00 android.hardware.radio@1.2-radio-service
+system          281      1 0 13:06:53 ?     00:00:00 android.hardware.sensors@1.0-service
+system          282      1 0 13:06:53 ?     00:00:00 android.hardware.weaver@1.0-service
+wifi            283      1 0 13:06:53 ?     00:00:00 android.hardware.wifi@1.0-service
+system          285      1 0 13:06:53 ?     00:00:00 android.hardware.lights-service.rockchip
+root            287      1 0 13:06:53 ?     00:00:00 android.hardware.power-service.rockchip
+system          289      1 0 13:06:53 ?     00:00:00 rockchip.hardware.neuralnetworks@1.0-service
+system          290      1 0 13:06:53 ?     00:00:00 rockchip.hardware.outputmanager@1.0-service
+media           291      1 0 13:06:53 ?     00:00:00 rockchip.hardware.rockit.hw@1.0-service
+audioserver     292      1 0 13:06:53 ?     00:00:00 audioserver
+credstore       295      1 0 13:06:53 ?     00:00:00 credstore /data/misc/credstore
+gpu_service     298      1 0 13:06:53 ?     00:00:00 gpuservice
+shell           335      1 0 13:06:54 ?     00:00:00 adbd --root_seclabel=u:r:su:s0
+nobody          337      1 0 13:06:54 ?     00:00:00 traced_probes
+nobody          338      1 0 13:06:54 ?     00:00:00 traced
+cameraserver    340      1 0 13:06:54 ?     00:00:00 cameraserver
+drm             341      1 0 13:06:54 ?     00:00:00 drmserver
+incidentd       346      1 0 13:06:54 ?     00:00:00 incidentd
+root            349      1 1 13:06:54 ?     00:00:01 installd
+keystore        351      1 0 13:06:54 ?     00:00:00 keystore /data/misc/keystore
+mediaex         352      1 0 13:06:54 ?     00:00:00 media.extractor aextractor
+media           353      1 0 13:06:54 ?     00:00:00 media.metrics diametrics
+media           354      1 0 13:06:54 ?     00:00:00 mediaserver
+root            355      1 0 13:06:54 ?     00:00:00 storaged
+wifi            356      1 0 13:06:54 ?     00:00:00 wificond
+mediacodec      357      1 0 13:06:54 ?     00:00:00 media.codec hw/android.hardware.media.omx@1.0-service
+radio           360      1 0 13:06:54 ?     00:00:00 rild
+mediacodec      365      1 1 13:06:54 ?     00:00:00 media.swcodec oid.media.swcodec/bin/mediaswcodec
+system          366      1 0 13:06:54 ?     00:00:00 gatekeeperd /data/misc/gatekeeper
+root            373      2 14 13:06:54 ?    00:00:21 [irq/68-dwc3]
+root            385      2 0 13:06:54 ?     00:00:00 [ext_eventd]
+root            386      2 0 13:06:54 ?     00:00:00 [dhd_watchdog_th]
+root            387      2 0 13:06:54 ?     00:00:00 [dhd_dpc]
+root            388      2 0 13:06:54 ?     00:00:00 [dhd_rxf]
+system          435    260 11 13:06:57 ?    00:00:16 system_server
+bluetooth       571    260 0 13:07:02 ?     00:00:00 com.android.bluetooth
+u0_a118         595    260 4 13:07:02 ?     00:00:06 com.android.systemui
+network_stack   758    260 0 13:07:03 ?     00:00:00 com.android.networkstack.process
+secure_element  783    260 0 13:07:03 ?     00:00:00 com.android.se
+root            811      2 0 13:07:03 ?     00:00:00 [dhd_eventd]
+webview_zygote  812    261 0 13:07:03 ?     00:00:00 webview_zygote
+radio           825    260 1 13:07:03 ?     00:00:01 com.android.phone
+system          848    260 1 13:07:03 ?     00:00:01 com.android.settings
+u0_a120         872    260 0 13:07:03 ?     00:00:00 android.ext.services
+wifi            904      1 0 13:07:03 ?     00:00:00 wpa_supplicant /vendor/etc/wifi/wpa_config.txt
+root            951      2 0 13:07:04 ?     00:00:00 [kbase_event]
+u0_a117         986    260 2 13:07:04 ?     00:00:02 com.android.launcher3
+root           1058      2 0 13:07:05 ?     00:00:00 [kbase_event]
+u0_a109        1154    260 0 13:07:07 ?     00:00:00 com.android.inputmethod.latin
+u0_a111        1181    260 0 13:07:07 ?     00:00:00 com.android.deskclock
+root           1207      1 0 13:07:07 ?     00:00:00 sh /system/bin/user_init.sh
+root           1215      1 0 13:07:08 ?     00:00:00 busybox telnetd -l /system/bin/sh
+root           1216   1207 0 13:07:08 ?     00:00:00 busybox tcpsvd 0 21 busybox ftpd -wA /
+root           1219   1207 0 13:07:08 ?     00:00:00 sh ./startup.sh
+system         1250    260 0 13:07:09 ?     00:00:00 com.cghs.stresstest
+u0_a121        1275    260 2 13:07:09 ?     00:00:03 com.android.providers.media.module
+u0_a119        1299    260 0 13:07:09 ?     00:00:00 com.android.smspush
+system         1327    260 0 13:07:09 ?     00:00:00 com.android.keychain
+root           1379      2 0 13:07:09 ?     00:00:00 [kbase_event]
+system         1413    260 0 13:07:10 ?     00:00:00 android.rockchip.update.service
+u0_a63         1434    260 0 13:07:10 ?     00:00:00 android.process.media
+u0_a110        1460    260 0 13:07:11 ?     00:00:00 com.android.calendar
+u0_a96         1481    260 0 13:07:11 ?     00:00:00 com.android.printspooler
+u0_a102        1507    260 0 13:07:11 ?     00:00:00 com.android.contacts
+system         1541    260 0 13:07:11 ?     00:00:00 com.android.dynsystem
+u0_a72         1562    260 0 13:07:12 ?     00:00:00 com.android.managedprovisioning
+u0_a100        1584    260 0 13:07:12 ?     00:00:00 com.android.onetimeinitializer
+u0_a65         1607    260 0 13:07:12 ?     00:00:00 com.android.packageinstaller
+u0_a122        1629    260 0 13:07:12 ?     00:00:00 com.android.permissioncontroller
+u0_a73         1655    260 0 13:07:12 ?     00:00:00 com.android.providers.calendar
+shell          1681    260 0 13:07:12 ?     00:00:00 com.android.shell
+system         1700    260 0 13:07:12 ?     00:00:00 com.android.localtransport
+u0_a90         1728    260 0 13:07:12 ?     00:00:00 com.android.traceur
+u0_a130        1752    260 1 13:07:12 ?     00:00:01 com.wasion.bluetooth
+u0_a77         1779    260 0 13:07:13 ?     00:00:00 com.android.externalstorage
+root           1809   1219 0 13:07:15 ?     00:00:00 sh ./restart.sh cabinetcontrolgo
+root           1810   1219 0 13:07:15 ?     00:00:00 sh ./restart.sh cabinettcpclient
+root           1811   1219 0 13:07:15 ?     00:00:00 sh ./restart.sh cabinetmqtt
+root           1812   1219 0 13:07:15 ?     00:00:00 sh ./restart.sh cabinetapp
+root           1813   1219 0 13:07:15 ?     00:00:00 sh ./restart.sh cabinetlocalupgrade
+root           1823   1813 0 13:07:16 ?     00:00:00 cabinetlocalupgrade
+root           1826   1810 0 13:07:16 ?     00:00:00 cabinettcpclient
+root           1829   1809 3 13:07:16 ?     00:00:03 cabinetcontrolgo
+root           1831   1811 0 13:07:16 ?     00:00:00 cabinetmqtt
+root           1832   1812 0 13:07:16 ?     00:00:00 cabinetapp
+root           1905   1829 0 13:07:17 ?     00:00:00 sh -c logcat | grep 'RIL ATC'
+root           1906   1905 0 13:07:17 ?     00:00:00 logcat
+root           1907   1905 0 13:07:17 ?     00:00:00 grep RIL ATC
+dns_tether     1916    259 0 13:07:20 ?     00:00:00 dnsmasq --keep-in-foreground --no-resolv --no-poll --dhcp-authoritative --dhcp-option-force=43,ANDROID_METERED --pid-file --listen-mark 0xf0063 --user dns_tether
+root           2067   1219 0 13:07:26 ?     00:00:00 sh ./restart_general_app.sh com.wasion.bluetooth com.wasion.bluetooth.MainActivity
+root           2132      2 0 13:07:27 ?     00:00:00 [kbase_event]
+root           2553      2 0 13:07:44 ?     00:00:00 [kbase_event]
+system         2573    260 0 13:07:44 ?     00:00:00 system:ui
+root           3403   1207 0 13:09:08 ?     00:00:00 sleep 60
+root           3578   1219 0 13:09:26 ?     00:00:00 sleep 30
+root           3587   1813 0 13:09:26 ?     00:00:00 sleep 5
+root           3589   1810 0 13:09:26 ?     00:00:00 sleep 5
+root           3592   1811 0 13:09:26 ?     00:00:00 sleep 5
+root           3594   2067 0 13:09:27 ?     00:00:00 sleep 5
+root           3597   1809 0 13:09:27 ?     00:00:00 sleep 5
+root           3598   1812 0 13:09:27 ?     00:00:00 sleep 5
+shell          3636    335 7 13:09:29 ?     00:00:00 ps -ef
+Result:
+  [RUNNING]     sh ./restart.sh cabinetcontrolgo          
+  [RUNNING]     sh ./restart.sh cabinettcpclient          
+  [RUNNING]     sh ./restart.sh cabinetmqtt               
+  [RUNNING]     sh ./restart.sh cabinetapp                
+  [RUNNING]     sh ./restart.sh cabinetlocalupgrade       
+  [RUNNING]     cabinetcontrolgo                          
+  [RUNNING]     cabinettcpclient                          
+  [RUNNING]     cabinetapp                                
+  [RUNNING]     cabinetmqtt                               
+  [RUNNING]     cabinetlocalupgrade                       
+  [INFO]        10 of 10 required processes running
+
+[7] SUMMARY
+--------------------------------------------------------------
+SYSTEM RESPONSE       : [OK]
+DISK CHECK            : [WARNING]
+MEMORY CHECK          : [OK]
+LARGE FILE ANALYSIS   : [INFO]
+FILE CHECK            : [OK]
+PROCESS CHECK         : [OK]
+
+==============================================================
+ End of report
+==============================================================

@@ -205,7 +205,7 @@ const PingCount = 4
 const PingTimeoutSec = 2
 
 // 待确认：内存告警阈值，暂不设默认告警，仅输出数据
-var MemWarnAvailablePercent *int = nil
+var MemWarnUsedPercent = 85 // 内存使用率阈值，0 表示不告警
 ```
 
 **验收标准**
@@ -293,19 +293,22 @@ var MemWarnAvailablePercent *int = nil
 
 #### 内存
 
-命令：`free -m` + `cat /proc/meminfo`
+命令：`cat /proc/meminfo`
 
-输出总内存、可用内存、**MemAvailable**、Swap，标签固定为 `[INFO]`，**第一阶段不做告警判定**。
+不使用 `free -m`：它的 `used`/`free` 把 buffer/cache 也算进去了，会严重误导
+（真机上 `free` 显示 48 MB，实际 `MemAvailable` 有 847 MB）。
+统一取 `/proc/meminfo` 的 `MemTotal` 与 `MemAvailable`。
 
-**为什么不设阈值**
+**判定**：使用率 = `100 - MemAvailable/MemTotal`，阈值 `MemWarnUsedPercent`（当前 85%）。
 
-1. `free -m` 的 `used` 把 buffer/cache 也算进去了，直接拿它算百分比会偏高，误报率高。真正该看的是 `/proc/meminfo` 的 `MemAvailable`（系统估算的"还能拿出来用"的内存）。
-2. 不同批次主控内存容量可能不同（RK3568 常见 2G/4G），固定 MB 数值没有意义，只能用百分比。
-3. 阈值定得太高会天天误报，定得太低会漏掉真正的内存压力，必须有基线数据支撑。
+| 条件 | 标签 | 输出 |
+|---|---|---|
+| 使用率 < 85% | `[OK]` | `Memory usage 53% (Total 1958 MB, Used 1037 MB)` |
+| 使用率 ≥ 85% | `[WARNING]` | 同上格式 |
+| 阈值设为 0 | `[INFO]` | 只输出数据，不作判断 |
 
-**做法**：先用本工具在若干台**正常运行**的主控上跑一遍，记录 `MemAvailable / MemTotal` 的常态区间，再据此定阈值。阈值确定后，只需修改 `config.go` 中 `MemWarnAvailablePercent` 一个变量，无需改其他代码。
-
-在阈值确定前，报告的「内存」一节照常输出完整数据，供研发人工判断。
+阈值与磁盘保持同一语义（使用率），便于现场理解。不同批次主控内存容量不同，
+因此只比百分比，不设固定 MB 值。
 
 **验收标准**
 - [ ] 真机 `df -h` 输出能正确解析出 4 个可写分区，`/` 不触发告警
@@ -657,7 +660,7 @@ cabinet-diagnostic/
 |---|---|---|
 | ~~Q1~~ | ~~报告是否需要落盘？~~ | **已确认**：必须落盘，`report_<设备序列号>_<时间>.txt`，内容为检测项目 + 原始输出，供研发全面分析 |
 | ~~Q2~~ | ~~`adb.exe` + DLL 是否内嵌？~~ | **已确认**：内嵌 `go:embed`，单文件交付 |
-| ~~Q3~~ | ~~内存告警阈值？~~ | **已确认**：第一阶段不告警，只输出 `MemAvailable` 等数据；阈值后续用实测基线确定 |
+| ~~Q3~~ | ~~内存告警阈值？~~ | **已确认**：使用率 85% 告警，与磁盘阈值同语义 |
 | ~~Q4~~ | ~~80% 阈值是否管 `/cache`、`/mnt/scratch`？~~ | **已确认**：管，但 `/data` 是重点 |
 | ~~Q5~~ | ~~大文件分析是否每次跑？~~ | **已确认**：仅在存在 ≥80% 可写分区时触发 |
 | ~~Q6~~ | ~~多台设备如何处理？~~ | **已确认**：现场只有一台，不实现多设备逻辑 |

@@ -174,7 +174,7 @@ cat /proc/meminfo
 
 ```go
 var RequiredFiles = []string{
-    "CabinetControlgo",
+    "cabinetControlgo",
     "cabinet.apk",
     "cabinet.toml",
     "cabinet.toml.bak",
@@ -195,7 +195,6 @@ var RequiredFiles = []string{
     "restart.sh",
     "restart_app.sh",
     "restart_general_app.sh",
-    "restart_xiaoyaapp.sh",
     "cabinetapp.yaml",
     "cabinetlocalupgrade.yaml",
     "deviceid",

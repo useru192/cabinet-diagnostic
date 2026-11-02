@@ -14,6 +14,7 @@ const (
 	LevelWarning    Level = "WARNING"
 	LevelError      Level = "ERROR"
 	LevelMissing    Level = "MISSING"
+	LevelRunning    Level = "RUNNING"
 	LevelNotRunning Level = "NOT RUNNING"
 	LevelTimeout    Level = "TIMEOUT"
 	LevelUnknown    Level = "UNKNOWN"
@@ -69,16 +70,21 @@ var levelOrder = []Level{
 	LevelWarning,
 	LevelUnknown,
 	LevelOK,
+	LevelRunning,
 	LevelInfo,
 }
 
 // WorstLevel 返回结果中最严重的等级，用于汇总。
+// RUNNING 等同于 OK，汇总时不作为独立等级出现。
 func (r Result) WorstLevel() Level {
 	if r.Skipped {
 		return LevelInfo
 	}
 	for _, l := range levelOrder {
 		if r.HasLevel(l) {
+			if l == LevelRunning {
+				return LevelOK
+			}
 			return l
 		}
 	}

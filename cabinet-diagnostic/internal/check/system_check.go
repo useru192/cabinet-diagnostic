@@ -107,17 +107,17 @@ func checkDisk(ctx context.Context, r *adb.Runner) (res Result) {
 		case mountVirtual:
 			virtual++
 		case mountDuplicate:
-			res.add(LevelInfo, "Duplicate mount skipped: %s (same disk as a parent mount)", p.MountedOn)
+			//res.add(LevelInfo, "Duplicate mount skipped: %s (same disk as a parent mount)", p.MountedOn)
 		default:
 			res.add(LevelUnknown, "Unclassified mount: %s (%d%%)", p.MountedOn, p.UsePercent)
 		}
 	}
 
 	if readOnly > 0 {
-		res.add(LevelInfo, "Read-only system mounts not counted: %d", readOnly)
+		//res.add(LevelInfo, "Read-only system mounts not counted: %d", readOnly)
 	}
 	if virtual > 0 {
-		res.add(LevelInfo, "Virtual memory mounts skipped: %d", virtual)
+		//res.add(LevelInfo, "Virtual memory mounts skipped: %d", virtual)
 	}
 	for _, line := range unparsed {
 		res.add(LevelUnknown, "Unparsed df line: %s", line)
@@ -149,115 +149,63 @@ func formatPartition(p parsers.Partition) string {
 // 内存
 // ---------------------------------------------------------------
 
-var reMemAvailable = regexp.MustCompile(`MemAvailable:\s+(\d+)`)
+var (
+	reMemTotal     = regexp.MustCompile(`(?m)^MemTotal:\s+(\d+)`)
+	reMemAvailable = regexp.MustCompile(`(?m)^MemAvailable:\s+(\d+)`)
+)
 
-// checkMemory 打印内存使用情况。
+// checkMemory 读取 /proc/meminfo 并输出内存使用情况。
 //
-// 第一阶段不做阈值判定：free 的 used/free 受 buffer/cache 影响会严重误导
-// （真机上 free 显示 48 MB，实际 MemAvailable 有 847 MB），
-// 且不同批次主控内存容量不同，没有基线数据时设阈值必然误报。
-// 阈值一旦在 config.MemWarnAvailablePercent 中设定，此函数自动生效。
+// 使用率 = 100 - MemAvailable/MemTotal，与磁盘阈值保持同一语义。
+// 使用率达到 config.MemWarnUsedPercent 时告警，设为 0 表示不告警。
 func checkMemory(ctx context.Context, r *adb.Runner) (res Result) {
 	res.Name = "MEMORY CHECK"
 	start := time.Now()
 	defer func() { res.Duration = time.Since(start) }()
 
-	res.Cmd = "adb shell free -m; head -30 /proc/meminfo"
-	freeOut, err := r.Shell(ctx, config.TimeoutCommon, "free -m")
-	res.Raw = freeOut.Combined()
+	res.Cmd = "adb shell cat /proc/meminfo"
+	out, err := r.Shell(ctx, config.TimeoutCommon, "cat /proc/meminfo")
+	res.Raw = out.Combined()
 
 	if err != nil {
 		if errors.Is(err, adb.ErrTimeout) {
-			res.add(LevelTimeout, "Device did not respond to 'free -m' within %s", config.TimeoutCommon)
+			res.add(LevelTimeout, "Device did not respond to 'cat /proc/meminfo' within %s", config.TimeoutCommon)
 		} else {
-			res.add(LevelError, "Failed to run 'free -m': %v", err)
+			res.add(LevelError, "Failed to run 'cat /proc/meminfo': %v", err)
 		}
 		return
 	}
 
-	if miOut, miErr := r.Shell(ctx, config.TimeoutCommon, "head -30 /proc/meminfo"); miErr == nil {
-		if s := strings.TrimSpace(miOut.Stdout); s != "" {
-			res.Raw += "\n--- /proc/meminfo ---\n" + s
-		}
-	}
-
-	st, ok := parseFreeMem(freeOut.Stdout)
+	totalMB, ok := meminfoMB(reMemTotal, out.Stdout)
 	if !ok {
-		res.add(LevelUnknown, "Cannot parse 'free -m' output")
+		res.add(LevelUnknown, "Cannot read MemTotal from /proc/meminfo")
 		return
 	}
-	if st.total <= 0 {
-		res.add(LevelUnknown, "Invalid total memory value: %d MB", st.total)
+	availMB, ok := meminfoMB(reMemAvailable, out.Stdout)
+	if !ok {
+		res.add(LevelUnknown, "Cannot read MemAvailable from /proc/meminfo")
 		return
 	}
 
-	// 优先用 /proc/meminfo 的 MemAvailable：它排除了可回收的 cache，
-	// 比 free 的 free 列更能反映真实可用内存。
-	availMB, source := st.avail, "free"
-	if mb, okMB := parseMemAvailable(res.Raw); okMB {
-		availMB, source = mb, "/proc/meminfo"
-	}
+	usedMB := totalMB - availMB
+	usedPct := usedMB * 100 / totalMB
+	msg := fmt.Sprintf("Memory usage %d%% (Total %d MB, Used %d MB)", usedPct, totalMB, usedMB)
 
-	pct := availMB * 100 / st.total
-	res.add(LevelInfo, "Available memory %d MB (%d%% of total, from %s)", availMB, pct, source)
-
-	if config.MemWarnAvailablePercent != nil && pct < *config.MemWarnAvailablePercent {
-		res.add(LevelWarning, "Available memory %d%% is below the configured threshold %d%%",
-			pct, *config.MemWarnAvailablePercent)
+	switch {
+	case config.MemWarnUsedPercent <= 0:
+		// 未配置阈值时只输出数据，不作判断
+		res.add(LevelInfo, "%s", msg)
+	case usedPct >= config.MemWarnUsedPercent:
+		res.add(LevelWarning, "%s", msg)
+	default:
+		res.add(LevelOK, "%s", msg)
 	}
 	return
 }
 
-// memStat 是 free -m 的解析结果，单位 MB。
-//
-// 只保留 total 与 avail：used / free 受 buffer/cache 影响会严重误导，
-// 真实可用内存以 avail 为准，并优先取 /proc/meminfo 的 MemAvailable。
-type memStat struct {
-	total int
-	avail int
-}
-
-// parseFreeMem 兼容两种 free 输出格式。
-//
-// 新格式（procps-ng）：
-//
-//	              total  used  free  shared  buff/cache  available
-//	Mem:           1958  1910    47      33         549        700
-//
-// 旧格式（本机 Android 11 实测）：
-//
-//	                total  used  free  shared  buffers
-//	Mem:             1958  1910    47      33        4
-//	-/+ buffers/cache:            1906    51
-func parseFreeMem(stdout string) (memStat, bool) {
-	var st memStat
-	found := false
-
-	for _, line := range strings.Split(stdout, "\n") {
-		f := strings.Fields(line)
-		if len(f) < 4 {
-			continue
-		}
-
-		switch f[0] {
-		case "Mem:":
-			st.total, _ = strconv.Atoi(f[1])
-			if len(f) >= 7 {
-				st.avail, _ = strconv.Atoi(f[6])
-			}
-			found = true
-		case "-/+":
-			// "-/+ buffers/cache:  <used>  <free>"
-			if len(f) >= 4 {
-				st.avail, _ = strconv.Atoi(f[3])
-			}
-		}
-	}
-	return st, found
-}
-
-func parseMemAvailable(meminfo string) (int, bool) {
-	m := reMemAvailable.FindStringSubmatch(meminfo)
+// meminfoMB 从 /proc/meminfo 中取出指定字段并换算为 MB。
+func meminfoMB(re *regexp.Regexp, meminfo string) (int, bool) {
+	m := re.FindStringSubmatch(meminfo)
 	if m == nil {
 		return 0, false
 	}

@@ -6,61 +6,38 @@ import (
 	"cabinet-diagnostic/parsers"
 )
 
-// 真机 Android 11 的 free -m 输出（旧格式，无 buff/cache 与 available 列）。
-const freeOldFormat = "\t\ttotal        used        free      shared     buffers\n" +
-	"Mem:             1958        1910          47          33           4\n" +
-	"-/+ buffers/cache:           1906          51\n" +
-	"Swap:             979           0         979\n"
+// 真机 Android 11 的 /proc/meminfo 节选。
+const meminfoSample = "MemTotal:        2005076 kB\n" +
+	"MemFree:           47944 kB\n" +
+	"Buffers:            4232 kB\n" +
+	"Cached:           934964 kB\n" +
+	"MemAvailable:     875404 kB\n" +
+	"SwapTotal:       1002532 kB\n" +
+	"SwapFree:        1002532 kB\n"
 
-// procps-ng 的新格式。
-const freeNewFormat = "               total        used        free      shared  buff/cache   available\n" +
-	"Mem:           1958        1910          47          33         549          700\n" +
-	"Swap:          1023           0        1023\n"
-
-func TestParseFreeMemOldFormat(t *testing.T) {
-	st, ok := parseFreeMem(freeOldFormat)
+func TestMeminfoMB(t *testing.T) {
+	total, ok := meminfoMB(reMemTotal, meminfoSample)
 	if !ok {
-		t.Fatal("parseFreeMem returned false for old format")
+		t.Fatal("MemTotal not parsed")
 	}
-	if st.total != 1958 {
-		t.Errorf("total = %d, want 1958", st.total)
+	if total != 1958 {
+		t.Errorf("total = %d, want 1958", total)
 	}
-	// 旧格式没有 available 列，应取 "-/+ buffers/cache" 的 free
-	if st.avail != 51 {
-		t.Errorf("avail = %d, want 51 (from buffers/cache line)", st.avail)
+
+	avail, ok := meminfoMB(reMemAvailable, meminfoSample)
+	if !ok {
+		t.Fatal("MemAvailable not parsed")
+	}
+	if avail != 854 {
+		t.Errorf("avail = %d, want 854", avail)
 	}
 }
 
-func TestParseFreeMemNewFormat(t *testing.T) {
-	st, ok := parseFreeMem(freeNewFormat)
-	if !ok {
-		t.Fatal("parseFreeMem returned false for new format")
+func TestMeminfoMBMissing(t *testing.T) {
+	if _, ok := meminfoMB(reMemTotal, "MemFree: 100 kB\n"); ok {
+		t.Error("missing MemTotal should return false")
 	}
-	if st.total != 1958 || st.avail != 700 {
-		t.Errorf("unexpected values: %+v", st)
-	}
-}
-
-func TestParseFreeMemGarbage(t *testing.T) {
-	if _, ok := parseFreeMem("no memory info here\n"); ok {
-		t.Error("garbage input should not be parsed")
-	}
-}
-
-func TestParseMemAvailable(t *testing.T) {
-	meminfo := "MemTotal:        2005364 kB\n" +
-		"MemFree:           50112 kB\n" +
-		"MemAvailable:     868352 kB\n"
-
-	mb, ok := parseMemAvailable(meminfo)
-	if !ok {
-		t.Fatal("parseMemAvailable returned false")
-	}
-	if mb != 848 {
-		t.Errorf("mb = %d, want 848", mb)
-	}
-
-	if _, ok := parseMemAvailable("MemFree: 100 kB\n"); ok {
+	if _, ok := meminfoMB(reMemAvailable, "MemFree: 100 kB\n"); ok {
 		t.Error("missing MemAvailable should return false")
 	}
 }

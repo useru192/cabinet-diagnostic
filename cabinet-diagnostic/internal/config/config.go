@@ -17,7 +17,7 @@ const (
 // ---------------------------------------------------------------
 
 // DiskWarnPercent 使用率达到或超过该值即告警。
-const DiskWarnPercent = 80
+const DiskWarnPercent = 5
 
 // WritableMounts 可写数据分区：逐条输出并参与告警。
 // /data 承载业务数据，满了会直接导致主控卡死；
@@ -44,12 +44,10 @@ var DedupMounts = []string{"/storage/emulated"}
 // 内存
 // ---------------------------------------------------------------
 
-// MemWarnAvailablePercent 内存告警阈值，含义为
-// MemAvailable / MemTotal 低于该百分比时告警。
-//
-// nil 表示第一阶段不做告警判定，仅输出数据。
-// 需要用真实设备基线测量后再设值，届时只改此变量即可。
-var MemWarnAvailablePercent *int = nil
+// MemWarnUsedPercent 内存使用率达到或超过该值即告警。
+// 使用率 = 100 - MemAvailable/MemTotal，与磁盘阈值保持同一语义。
+// 设为 0 表示不告警。
+var MemWarnUsedPercent = 85
 
 // ---------------------------------------------------------------
 // 网络
@@ -73,7 +71,7 @@ const (
 	DeviceIDFile = CabinetDir + "/deviceid"
 
 	// TopFilesLimit 大文件分析最多输出的文件数量。
-	TopFilesLimit = 40
+	TopFilesLimit = 20
 )
 
 // ---------------------------------------------------------------
@@ -92,7 +90,7 @@ var (
 // ---------------------------------------------------------------
 
 var RequiredFiles = []string{
-	"CabinetControlgo",
+	//"cabinetControlgo",
 	"cabinet.apk",
 	"cabinet.toml",
 	"cabinet.toml.bak",
@@ -113,7 +111,6 @@ var RequiredFiles = []string{
 	"restart.sh",
 	"restart_app.sh",
 	"restart_general_app.sh",
-	"restart_xiaoyaapp.sh",
 	"cabinetapp.yaml",
 	"cabinetlocalupgrade.yaml",
 	"deviceid",
@@ -142,5 +139,4 @@ var RequiredProcesses = []string{
 	"cabinetapp",
 	"cabinetmqtt",
 	"cabinetlocalupgrade",
-	"cabinetapp.wasion",
 }

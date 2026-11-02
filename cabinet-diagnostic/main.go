@@ -68,6 +68,7 @@ func main() {
 		return
 	}
 	printDeviceInfo(info)
+	check.RunChecks(ctx, runner, info)
 
 	menuLoop(ctx, runner, info)
 }
@@ -85,11 +86,11 @@ func menuLoop(ctx context.Context, runner *adb.Runner, info adb.DeviceInfo) {
 
 		switch line {
 		case "1":
-			check.RunSystemChecks(ctx, runner, info)
+			check.RunChecks(ctx, runner, info)
 		case "2":
 			notImplemented("Check Network Connectivity")
 		case "3":
-			check.RunSystemChecks(ctx, runner, info)
+			check.RunChecks(ctx, runner, info)
 		case "0":
 			fmt.Println("Bye.")
 			return
