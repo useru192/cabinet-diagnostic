@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"strings"
-	"time"
 
 	"cabinet-diagnostic/internal/adb"
 	"cabinet-diagnostic/internal/config"
@@ -17,9 +16,6 @@ import (
 // 避免 sh -c / grep 自身污染进程列表。
 func checkProcesses(ctx context.Context, r *adb.Runner) (res Result) {
 	res.Name = "PROCESS CHECK"
-	start := time.Now()
-	defer func() { res.Duration = time.Since(start) }()
-
 	res.Cmd = "adb shell ps -ef"
 	out, err := r.Shell(ctx, config.TimeoutCommon, "ps -ef")
 	res.Raw = out.Combined()
@@ -44,14 +40,18 @@ func checkProcesses(ctx context.Context, r *adb.Runner) (res Result) {
 	var missing int
 	for _, name := range config.RequiredProcesses {
 		if running[name] {
-			res.add(LevelRunning, "%-42s", name)
+			res.addDetail(LevelRunning, "%-42s", name)
 			continue
 		}
 		missing++
 		res.add(LevelNotRunning, "%s", name)
 	}
 
-	res.add(LevelInfo, "%d of %d required processes running",
+	level := LevelOK
+	if missing > 0 {
+		level = LevelWarning
+	}
+	res.add(level, "%d of %d required processes running",
 		len(config.RequiredProcesses)-missing, len(config.RequiredProcesses))
 
 	for _, line := range unparsed {
@@ -76,7 +76,6 @@ func runningSet(procs []parsers.Process) map[string]bool {
 //	sh ./restart.sh cabinetcontrolgo  ->  "sh ./restart.sh cabinetcontrolgo"
 //	sh ./startup.sh                   ->  "sh ./startup.sh"
 //	cabinetcontrolgo                  ->  "cabinetcontrolgo"
-//	cabinetapp.wasion:jse 57 61 ...   ->  "cabinetapp.wasion:jse"（不会误判为主进程）
 //	sh -c ps -ef | grep ...           ->  "sh"（不会误判为脚本进程）
 //
 // 首字段整串精确比较，因此 :jse 这类子进程和 sh -c / grep 自身都会被自然排除。

@@ -333,11 +333,20 @@ var MemWarnUsedPercent = 85 // 内存使用率阈值，0 表示不告警
 **输出**
 
 ```text
-========== File Check ==========
-[OK]      /data/cabinet/CabinetControlgo          (directory)
-[OK]      /data/cabinet/cabinetcontrolgo          (file)
-[MISSING] /data/cabinet/cabinetmqtt.yaml
+========== FILE CHECK ==========
+[MISSING]     /data/cabinet/cabinetmqtt.yaml
+[WARNING]     30 of 31 required items present
 ```
+
+全部齐全时只输出一行：
+
+```text
+========== FILE CHECK ==========
+[OK]          31 of 31 required items present
+```
+
+> **终端精简，报告完整**：终端只显示缺失项和汇总行，31 条 `[OK]` 明细只写入报告，
+> 避免现场人员看到满屏无意义的信息。研发需要明细时看报告即可。
 
 **异常处理**
 - 目录不存在 → `[ERROR] Directory not found: /data/cabinet`，33 项全部跳过
@@ -377,11 +386,19 @@ var MemWarnUsedPercent = 85 // 内存使用率阈值，0 表示不告警
 **输出**
 
 ```text
-========== Process Check ==========
-[RUNNING]      cabinetcontrolgo
-[RUNNING]      sh ./restart.sh cabinetcontrolgo
-[NOT RUNNING]  cabinetmqtt
+========== PROCESS CHECK ==========
+[NOT RUNNING] cabinetmqtt
+[WARNING]     9 of 10 required processes running
 ```
+
+全部运行时只输出一行：
+
+```text
+========== PROCESS CHECK ==========
+[OK]          10 of 10 required processes running
+```
+
+> 与文件检测一致：`[RUNNING]` 明细只进报告，终端只显示未运行项与汇总行。
 
 **「守护在、业务不在」**：守护脚本与业务进程是两条独立条目，分别判定即可，无需 PPID。
 

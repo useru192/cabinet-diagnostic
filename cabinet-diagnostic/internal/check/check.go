@@ -1,10 +1,7 @@
 // Package check 实现各检测项、流程编排与报告生成。
 package check
 
-import (
-	"fmt"
-	"time"
-)
+import "fmt"
 
 // Level 是检测结论的等级，与设计文档定义的状态集合一致。
 type Level string
@@ -25,6 +22,7 @@ const (
 type Item struct {
 	Level   Level
 	Message string
+	Detail  bool
 }
 
 // Result 是一个检测项的完整结果。
@@ -38,12 +36,16 @@ type Result struct {
 	Items      []Item
 	Skipped    bool
 	SkipReason string
-	Duration   time.Duration
 }
 
 // add 追加一条判定结论。
 func (r *Result) add(level Level, format string, args ...any) {
 	r.Items = append(r.Items, Item{Level: level, Message: fmt.Sprintf(format, args...)})
+}
+
+// addDetail 追加一条明细行，只写入报告，不在终端显示。
+func (r *Result) addDetail(level Level, format string, args ...any) {
+	r.Items = append(r.Items, Item{Level: level, Message: fmt.Sprintf(format, args...), Detail: true})
 }
 
 // HasLevel 判断结果中是否包含某个等级。
@@ -75,20 +77,17 @@ var levelOrder = []Level{
 }
 
 // WorstLevel 返回结果中最严重的等级，用于汇总。
-// RUNNING 等同于 OK，汇总时不作为独立等级出现。
+//
+// RUNNING 不在 levelOrder 中：每个检测项都有汇总行（[OK] 或 [WARNING]），
+// 因此含 RUNNING 的结果必定同时含 OK，会先命中 OK 而汇总为 [OK]。
 func (r Result) WorstLevel() Level {
 	if r.Skipped {
 		return LevelInfo
 	}
 	for _, l := range levelOrder {
 		if r.HasLevel(l) {
-			if l == LevelRunning {
-				return LevelOK
-			}
 			return l
 		}
 	}
 	return LevelOK
 }
-
-

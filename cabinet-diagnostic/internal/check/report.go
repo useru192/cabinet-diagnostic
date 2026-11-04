@@ -19,9 +19,10 @@ const reportSep = "-------------------------------------------------------------
 // 每检测完一项立即落盘，不做缓冲：主控卡死时程序可能被强杀，
 // 集中到最后一次写会导致前面的数据全部丢失，而现场往往只复现一次。
 type reporter struct {
-	f    *os.File
-	path string
-	seq  int
+	f     *os.File
+	path  string
+	seq   int // 检测项序号，整个会话内递增
+	round int // 轮次：启动时一次，之后每次菜单检测再加一轮
 }
 
 // newReporter 创建报告文件并写入头部。创建失败时返回 nil，
@@ -75,6 +76,19 @@ func (rp *reporter) record(res Result) Result {
 	return res
 }
 
+// beginRound 写入一轮检测的分隔标题。
+// 同一份报告里可能有多轮（启动体检 + 菜单复测），分隔开便于研发对照。
+func (rp *reporter) beginRound(title string) {
+	if rp == nil || rp.f == nil {
+		return
+	}
+	rp.round++
+	fmt.Fprintln(rp.f)
+	fmt.Fprintln(rp.f, "==============================================================")
+	fmt.Fprintf(rp.f, " Round %d : %s  (%s)\n", rp.round, title, time.Now().Format("2006-01-02 15:04:05"))
+	fmt.Fprintln(rp.f, "==============================================================")
+}
+
 func (rp *reporter) writeResult(res Result) {
 	rp.seq++
 	fmt.Fprintf(rp.f, "\n[%d] %s\n", rp.seq, res.Name)
@@ -103,6 +117,13 @@ func (rp *reporter) writeSummary(results []Result) {
 	fmt.Fprintln(rp.f, reportSep)
 	for _, res := range results {
 		fmt.Fprintf(rp.f, "%-22s: [%s]\n", res.Name, res.WorstLevel())
+	}
+}
+
+// endReport 写入报告结尾。会话结束时调用一次。
+func (rp *reporter) endReport() {
+	if rp == nil || rp.f == nil {
+		return
 	}
 	fmt.Fprintln(rp.f)
 	fmt.Fprintln(rp.f, "==============================================================")
@@ -194,6 +215,9 @@ func printResult(res Result) {
 	}
 
 	for _, it := range res.Items {
+		if it.Detail {
+			continue // 明细行只写入报告，不在终端显示
+		}
 		fmt.Printf("%-13s %s\n", "["+string(it.Level)+"]", it.Message)
 	}
 }

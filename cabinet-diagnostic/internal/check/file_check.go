@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"strings"
-	"time"
 
 	"cabinet-diagnostic/internal/adb"
 	"cabinet-diagnostic/internal/config"
@@ -16,9 +15,6 @@ import (
 // 只检查存在性，不检查文件内容。单项缺失不会中断其余项的检查。
 func checkFiles(ctx context.Context, r *adb.Runner) (res Result) {
 	res.Name = "FILE CHECK"
-	start := time.Now()
-	defer func() { res.Duration = time.Since(start) }()
-
 	res.Cmd = "adb shell ls -la " + config.CabinetDir
 	out, err := r.Shell(ctx, config.TimeoutCommon, "ls -la "+config.CabinetDir)
 	res.Raw = out.Combined()
@@ -55,13 +51,17 @@ func checkFiles(ctx context.Context, r *adb.Runner) (res Result) {
 		if !ok {
 			continue // 缺失项在下面按清单顺序单独输出
 		}
-		res.add(LevelOK, "%-42s (%s)", config.CabinetDir+"/"+name, e.Type)
+		res.addDetail(LevelOK, "%-42s (%s)", config.CabinetDir+"/"+name, e.Type)
 	}
 	for _, name := range missing {
 		res.add(LevelMissing, "%s/%s", config.CabinetDir, name)
 	}
 
-	res.add(LevelInfo, "%d of %d required items present",
+	level := LevelOK
+	if len(missing) > 0 {
+		level = LevelWarning
+	}
+	res.add(level, "%d of %d required items present",
 		len(config.RequiredFiles)-len(missing), len(config.RequiredFiles))
 
 	for _, line := range unparsed {
@@ -72,8 +72,7 @@ func checkFiles(ctx context.Context, r *adb.Runner) (res Result) {
 
 // diffRequired 比对目录项与必需清单。
 //
-// 名称按大小写精确匹配：真机上 CabinetControlgo（目录）与
-// cabinetcontrolgo（文件）是两个不同条目，不能互相替代。
+// 名称按大小写精确匹配
 func diffRequired(entries []parsers.FileEntry, required []string) (found map[string]parsers.FileEntry, missing []string) {
 	found = make(map[string]parsers.FileEntry, len(entries))
 	for _, e := range entries {

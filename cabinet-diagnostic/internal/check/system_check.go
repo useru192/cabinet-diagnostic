@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"cabinet-diagnostic/internal/adb"
 	"cabinet-diagnostic/internal/config"
@@ -22,9 +21,6 @@ import (
 // checkSystemResponse 确认设备能正常执行命令，并给出 root 状态。
 func checkSystemResponse(ctx context.Context, r *adb.Runner) (res Result) {
 	res.Name = "SYSTEM RESPONSE"
-	start := time.Now()
-	defer func() { res.Duration = time.Since(start) }()
-
 	res.Cmd = "adb shell id"
 	out, err := r.Shell(ctx, config.TimeoutCommon, "id")
 	res.Raw = out.Combined()
@@ -70,9 +66,6 @@ const (
 // 若统一按阈值判断会对每次运行产生误报。
 func checkDisk(ctx context.Context, r *adb.Runner) (res Result) {
 	res.Name = "DISK CHECK"
-	start := time.Now()
-	defer func() { res.Duration = time.Since(start) }()
-
 	res.Cmd = "adb shell df -h"
 	out, err := r.Shell(ctx, config.TimeoutCommon, "df -h")
 	res.Raw = out.Combined()
@@ -156,13 +149,9 @@ var (
 
 // checkMemory 读取 /proc/meminfo 并输出内存使用情况。
 //
-// 使用率 = 100 - MemAvailable/MemTotal，与磁盘阈值保持同一语义。
 // 使用率达到 config.MemWarnUsedPercent 时告警，设为 0 表示不告警。
 func checkMemory(ctx context.Context, r *adb.Runner) (res Result) {
 	res.Name = "MEMORY CHECK"
-	start := time.Now()
-	defer func() { res.Duration = time.Since(start) }()
-
 	res.Cmd = "adb shell cat /proc/meminfo"
 	out, err := r.Shell(ctx, config.TimeoutCommon, "cat /proc/meminfo")
 	res.Raw = out.Combined()
@@ -230,9 +219,6 @@ type fileSize struct {
 // 不使用 du -ak：目录累计值会排在最前，看不到真正的大文件。
 func checkLargeFiles(ctx context.Context, r *adb.Runner, triggered bool) (res Result) {
 	res.Name = "LARGE FILE ANALYSIS"
-	start := time.Now()
-	defer func() { res.Duration = time.Since(start) }()
-
 	if !triggered {
 		res.Skipped = true
 		res.SkipReason = fmt.Sprintf("no writable partition reached %d%%", config.DiskWarnPercent)
@@ -293,13 +279,10 @@ func collectFiles(listing string) []fileSize {
 		}
 
 		entries, _ := parsers.ParseLsLong(line)
-		for _, e := range entries {
-			if e.Type != parsers.EntryFile {
-				continue
-			}
-			if e.Name == "." || e.Name == ".." {
-				continue
-			}
+		if len(entries) == 0 {
+			continue
+		}
+		if e := entries[0]; e.Type == parsers.EntryFile {
 			files = append(files, fileSize{path: curDir + "/" + e.Name, size: e.Size})
 		}
 	}

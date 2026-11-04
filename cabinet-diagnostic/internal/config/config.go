@@ -17,7 +17,7 @@ const (
 // ---------------------------------------------------------------
 
 // DiskWarnPercent 使用率达到或超过该值即告警。
-const DiskWarnPercent = 5
+const DiskWarnPercent = 85
 
 // WritableMounts 可写数据分区：逐条输出并参与告警。
 // /data 承载业务数据，满了会直接导致主控卡死；
@@ -37,7 +37,6 @@ var VirtualMounts = []string{
 }
 
 // DedupMounts 与其它分区同盘的挂载点，去重后不再重复统计。
-// 真机上 /storage/emulated 与 /data 的 Size/Used 完全一致。
 var DedupMounts = []string{"/storage/emulated"}
 
 // ---------------------------------------------------------------
@@ -45,7 +44,6 @@ var DedupMounts = []string{"/storage/emulated"}
 // ---------------------------------------------------------------
 
 // MemWarnUsedPercent 内存使用率达到或超过该值即告警。
-// 使用率 = 100 - MemAvailable/MemTotal，与磁盘阈值保持同一语义。
 // 设为 0 表示不告警。
 var MemWarnUsedPercent = 85
 
@@ -83,10 +81,59 @@ var (
 	TimeoutCommon      = 5 * time.Second  // ps / df / ls / id / uptime
 	TimeoutPing        = 15 * time.Second // ping
 	TimeoutScan        = 10 * time.Second // 目录遍历类命令
+	TimeoutDelete      = 10 * time.Second // rm + 回读验证（菜单 3：删除设备文件）
 )
 
 // ---------------------------------------------------------------
-// 关键文件清单（与需求文档逐字一致，大小写敏感，不得增删）
+// 删除约束（菜单 3「Delete Device File」）
+//
+// 删除是本工具唯一的设备写操作，由 internal/action 实施。
+// 约束集中在此处维护，action 包只读不写：改保护清单只需在此增删一行。
+// ---------------------------------------------------------------
+
+// DeleteRoot 是唯一允许删除操作的目录前缀。
+// 白名单之外的任何路径一律拒绝，防止误删系统或业务关键文件。
+const DeleteRoot = CabinetDir
+
+// DeleteProtectedFiles 禁止删除的业务关键文件（按基名精确匹配，大小写敏感）。
+//
+// 原则：可执行程序、配置、业务数据（数据库/设备号）、开机与守护脚本全部禁删——
+// 删掉任何一个都可能导致柜子无法启动或业务中断，且现场没有恢复能力。
+// 日志类文件不在保护之列，这才是本功能的目标场景。
+var DeleteProtectedFiles = []string{
+	// 业务数据
+	"deviceid",
+	"sqlite.db",
+	// 主配置
+	"cabinet.toml",
+	"cabinet.toml.bak",
+	"cabinetcontrolgo.toml",
+	"cabinetcontrolgo.toml.bak",
+	"cabinetmqtt.yaml",
+	"cabinetapp.yaml",
+	"cabinetlocalupgrade.yaml",
+	// 可执行程序与 APK
+	"cabinetcontrolgo",
+	"cabinettcpclient",
+	"cabinetmqtt",
+	"cabinetapp",
+	"cabinetlocalupgrade",
+	"cabinet.apk",
+	"cabinetbluetooth.apk",
+	"grpcurl",
+	// 脚本（开机、守护、升级）
+	"startup.sh",
+	"init.sh",
+	"restart.sh",
+	"restart_app.sh",
+	"restart_general_app.sh",
+	"ota_upgrade_app.sh",
+	"ota_upgrade_main.sh",
+	"ota_upgrade_mcu.sh",
+}
+
+// ---------------------------------------------------------------
+// 关键文件清单（大小写敏感）
 // ---------------------------------------------------------------
 
 var RequiredFiles = []string{
@@ -125,7 +172,7 @@ var RequiredFiles = []string{
 }
 
 // ---------------------------------------------------------------
-// 关键进程清单（与需求文档逐字一致，不得增删）
+// 关键进程清单
 // ---------------------------------------------------------------
 
 var RequiredProcesses = []string{

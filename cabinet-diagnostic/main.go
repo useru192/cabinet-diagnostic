@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"cabinet-diagnostic/internal/action"
 	"cabinet-diagnostic/internal/adb"
 	"cabinet-diagnostic/internal/check"
 	"cabinet-diagnostic/internal/config"
@@ -68,13 +69,22 @@ func main() {
 		return
 	}
 	printDeviceInfo(info)
-	check.RunChecks(ctx, runner, info)
 
-	menuLoop(ctx, runner, info)
+	// 一次启动只产生一份报告 + 一份审计日志，菜单复测追加到同一份。
+	sess := check.NewSession(ctx, runner, info)
+	defer sess.Close()
+
+	auditor := action.NewAuditor(info)
+	defer auditor.Close()
+
+	// 启动体检：系统 + 网络，只输出一个 SUMMARY
+	sess.Startup(ctx)
+
+	menuLoop(ctx, runner, sess, auditor)
 }
 
 // menuLoop 主菜单循环。非法输入不会导致程序退出。
-func menuLoop(ctx context.Context, runner *adb.Runner, info adb.DeviceInfo) {
+func menuLoop(ctx context.Context, runner *adb.Runner, sess *check.Session, auditor *action.Auditor) {
 	for {
 		printMenu()
 
@@ -86,11 +96,16 @@ func menuLoop(ctx context.Context, runner *adb.Runner, info adb.DeviceInfo) {
 
 		switch line {
 		case "1":
-			check.RunChecks(ctx, runner, info)
+			sess.System(ctx)
 		case "2":
-			notImplemented("Check Network Connectivity")
+			sess.Network(ctx)
 		case "3":
-			check.RunChecks(ctx, runner, info)
+			// 删除流程自带交互：返回 false 表示用户输入空行返回菜单。
+			for {
+				if !action.DeleteFlow(ctx, runner, auditor, readLine) {
+					break
+				}
+			}
 		case "0":
 			fmt.Println("Bye.")
 			return
@@ -105,10 +120,7 @@ func printBanner() {
 	fmt.Println("========================================")
 	fmt.Println("   " + config.AppName)
 	fmt.Println("========================================")
-	fmt.Println()
-	fmt.Println("Device: RK3568 / Android 11")
 	fmt.Println("Version: " + config.AppVersion)
-	fmt.Println()
 }
 
 func printMenu() {
@@ -116,7 +128,7 @@ func printMenu() {
 	fmt.Println("----------------------------------------")
 	fmt.Println("1. Check System Status")
 	fmt.Println("2. Check Network Connectivity")
-	fmt.Println("3. Run Full Diagnostics")
+	fmt.Println("3. Delete Device File")
 	fmt.Println("0. Exit")
 	fmt.Println("----------------------------------------")
 	fmt.Print("Please select an option: ")
@@ -161,12 +173,6 @@ func printConnProblem(c adb.DeviceConn) {
 	default:
 		fmt.Printf("[UNKNOWN] Cannot determine device state (%s).\n", c.Detail)
 	}
-}
-
-// notImplemented 暂无实现的功能项。
-func notImplemented(name string) {
-	fmt.Printf("[INFO] \"%s\" is not implemented yet.\n", name)
-	fmt.Println("       It will be added in the next phase.")
 }
 
 func pressEnter() {

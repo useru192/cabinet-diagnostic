@@ -17,9 +17,10 @@ var dnsErrorMarkers = []string{
 }
 
 var (
-	reTxRx = regexp.MustCompile(`(\d+) packets transmitted,\s*(\d+) (?:packets )?received`)
-	reLoss = regexp.MustCompile(`(\d+)% packet loss`)
-	reTTL  = regexp.MustCompile(`ttl=\d+`)
+	reTxRx   = regexp.MustCompile(`(\d+) packets transmitted,\s*(\d+) (?:packets )?received`)
+	reLoss   = regexp.MustCompile(`(\d+)% packet loss`)
+	reTTL    = regexp.MustCompile(`ttl=\d+`)
+	rePingIP = regexp.MustCompile(`PING \S+ \(([0-9.]+)\)`)
 )
 
 // PingResult 是一次 ping 检测的解析结果。
@@ -31,6 +32,7 @@ type PingResult struct {
 	Transmitted int
 	Received    int
 	LossPercent int
+	TargetIP    string // 解析出的目标 IP，如 PING www.baidu.com (110.242.68.3)
 	Raw         string // 原始输出（stdout + stderr），用于写入检测日志
 }
 
@@ -47,6 +49,10 @@ func ParsePing(stdout, stderr string, exitCode int) PingResult {
 
 	res := PingResult{Raw: raw}
 	lower := strings.ToLower(raw)
+
+	if m := rePingIP.FindStringSubmatch(raw); m != nil {
+		res.TargetIP = m[1]
+	}
 
 	for _, marker := range dnsErrorMarkers {
 		if strings.Contains(lower, marker) {
